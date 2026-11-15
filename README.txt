@@ -145,7 +145,10 @@ Inventory tab to try them.
    and starts the game (with the mods as set in the Mods tab).
 
  FOLDERS
-   Use a different game folder, mods folder or saves folder. Leave a box
+   Games found: every game the toolbox finds, by app (Triforce, Longshot,
+   NX2navi). Pick one and press Apply to play that one: the toolbox opens
+   again with its program for Save and play, its mods and its saves.
+   Or use a different game folder, mods folder or saves folder. Leave a box
    empty to use the default. (Triforce and Longshot only load mods from the
    "mods" folder in the game folder.)
 

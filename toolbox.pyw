@@ -100,7 +100,26 @@ class Toolbox:
                  'The folder of mod folders the Mods tab lists and switches on and off.'),
                 ('Saves folder', self.save_var, nxsave.game_dir() / 'user' / 'save',
                  "A save's own folder (the one with slot_01, slot_02...), or a folder of those: the latest is used."))
-        r = 0
+        # every game folder found (Triforce, Longshot...): pick one to use it, its mods and its saves
+        ttk.Label(tab, text='Games found', font=('Segoe UI', 10, 'bold')).grid(row=0, column=0, sticky='w')
+        self.found = nxsave.all_game_dirs()
+        self.found_var = tk.StringVar()
+        labels = [f'{app}  —  {path}' for app, path in self.found]
+        box = ttk.Combobox(tab, textvariable=self.found_var, values=labels, state='readonly')
+        box.grid(row=0, column=1, columnspan=3, sticky='ew', padx=8)
+        box.bind('<<ComboboxSelected>>', lambda _e: self.pick_found(box.current()))
+        now = os.path.normcase(str(self.game_at_start.resolve())) if self.game_at_start.exists() else ''
+        self.app_at_start = nxsave.app_of(self.game_at_start)
+        self.picked_app = settings.get('game_app', '')
+        for i, (app, path) in enumerate(self.found):
+            if os.path.normcase(str(path.resolve())) == now and app == self.app_at_start:
+                box.current(i)
+        hint = ('Pick one to play that game: the Game folder below is set to it, and its mods and saves are used.'
+                if len(self.found) > 1 else 'Only one game folder was found. Another one can be picked below.')
+        ttk.Label(tab, text=f'{hint}  (In use now: {nxsave.app_of(self.game_at_start)}.)',
+                  foreground=theme.MUTED).grid(row=1, column=1, columnspan=3, sticky='w', padx=8)
+        ttk.Separator(tab).grid(row=2, column=0, columnspan=4, sticky='ew', pady=(12, 0))
+        r = 3
         for label, var, default, hint in rows:
             ttk.Label(tab, text=label, font=('Segoe UI', 10, 'bold')).grid(row=r, column=0, sticky='w', pady=(10, 0))
             ttk.Entry(tab, textvariable=var).grid(row=r, column=1, sticky='ew', padx=8, pady=(10, 0))
@@ -323,6 +342,26 @@ class Toolbox:
         self.saves.restyle()
         self.mods.restyle()
 
+    def reopen(self):
+        """Starts the toolbox again (a new game folder is read when it starts) and closes this one."""
+        import subprocess
+        py = sys.executable
+        windowless = os.path.join(os.path.dirname(py), 'pythonw.exe')
+        subprocess.Popen([windowless if os.path.isfile(windowless) else py, os.path.join(HERE, 'toolbox.pyw')],
+                         cwd=HERE)
+        self.root.destroy()
+
+    def pick_found(self, i):
+        """A game picked in Games found: it becomes the Game folder; its own mods and saves folders (the defaults)."""
+        if i < 0:
+            return
+        app, path = self.found[i]
+        self.game_var.set(str(path))
+        self.picked_app = app if app != 'Game files' else ''
+        self.mods_var.set('')
+        self.save_var.set('')
+        self.folders_status['text'] = f'{app} picked. Press Apply to use it.'
+
     @staticmethod
     def found_game():
         """Where the game is found when none is picked."""
@@ -365,11 +404,13 @@ class Toolbox:
         self.mods_var.set(mods_dir)
         self.save_var.set(save_dir)
         nxsave.save_settings({**nxsave.load_settings(), 'mods_dir': mods_dir, 'save_dir': save_dir,
-                              'game_dir': os.path.normpath(game) if game else ''})
-        if not same(str(nxsave.game_dir()), self.game_at_start):
-            messagebox.showinfo('Folders', 'The game folder changed: close the toolbox and open it again to use it.',
-                                parent=self.root)
-            self.folders_status['text'] = 'Saved. Open the toolbox again for the new game folder.'
+                              'game_dir': os.path.normpath(game) if game else '',
+                              'game_app': self.picked_app if game else ''})
+        if not same(str(nxsave.game_dir()), self.game_at_start) or nxsave.app_of() != self.app_at_start:
+            self.folders_status['text'] = 'Saved. Open the toolbox again for the new game.'
+            if messagebox.askyesno('Folders', f'Now playing {nxsave.app_of()} from\n{nxsave.game_dir()}\n\nThe '
+                                   'toolbox needs to open again to use it. Open it again now?', parent=self.root):
+                self.reopen()
             return
         mod_loader.set_mods_dir(mods_dir or None)
         self.mods.dirty = False

@@ -71,7 +71,7 @@ Every list sorts by any column: click the heading, and click again to reverse. *
 ![The All entries tab](docs/all-entries.png)
 
 ### Folders
-Use a different game, mods or saves folder. Leave a box empty for the default.
+**Games found** lists every game the toolbox finds, by app: Triforce, Longshot, and NX2navi (whose `ocarina.exe` can sit in the same folder as Triforce's). Pick one and press Apply: the toolbox reopens with that game's program for Save and play, its mods and its saves. Or set a different game, mods or saves folder by hand. Leave a box empty for the default.
 
 ![The Folders tab](docs/folders.png)
 

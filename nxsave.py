@@ -244,18 +244,38 @@ class SaveFile:
 # ------------------------------------------------------------------------------------- the install's folders
 
 GAME_PROCESSES = ('Triforce.exe', 'TriforceSetup.exe', 'ocarina.exe', 'longshot.exe', 'LongshotLauncher.exe')
-# the game's program in its folder: Triforce, or Longshot (another PC port of the game, by MagicBeanDev)
-GAME_EXES = ('Triforce.exe', 'longshot.exe')
+# the apps that play the game, by the program each puts in the game folder: Triforce; Longshot (another PC port, by
+# MagicBeanDev); NX2navi (the older launcher: its ocarina.exe; Triforce may have built into the same folder)
+APPS = (('Triforce', 'Triforce.exe'), ('Longshot', 'longshot.exe'), ('NX2navi', 'ocarina.exe'))
+GAME_EXES = tuple(exe for _app, exe in APPS)
+
+
+def apps_in(game):
+    """The apps whose program is in a game folder, in the order above."""
+    game = Path(game)
+    return [app for app, exe in APPS if (game / exe).is_file()]
+
+
+def app_of(game=None):
+    """The app a game folder is played with: the one picked in the Folders tab when its program is there, else the
+    first one there; 'Game files' for a romfs folder without any."""
+    game = Path(game or game_dir())
+    there = apps_in(game)
+    chosen = load_settings().get('game_app')
+    if chosen in there:
+        return chosen
+    return there[0] if there else 'Game files'
 
 
 def game_exe(game=None):
-    """The program that starts the game in its folder (Triforce.exe or longshot.exe), None when there is none."""
+    """The program that starts the game (the app's: Triforce.exe, longshot.exe or ocarina.exe), None when none."""
     game = Path(game or game_dir())
-    return next((game / n for n in GAME_EXES if (game / n).is_file()), None)
+    exe = dict(APPS).get(app_of(game))
+    return game / exe if exe else None
 
 
 def is_longshot(game=None):
-    return (Path(game or game_dir()) / 'longshot.exe').is_file()
+    return app_of(game) == 'Longshot'
 
 
 def game_running():
@@ -297,6 +317,22 @@ def _game_dir_candidates():
     if longshot.is_dir():
         yield from sorted((p for p in longshot.iterdir() if (p / 'longshot.exe').is_file()),
                           key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+def all_game_dirs():
+    """[(app, folder)] of every game found in the usual places: one row per app whose program a folder has (a folder
+    with both Triforce.exe and NX2navi's ocarina.exe gives two), the one the toolbox would use first."""
+    out, seen = [], set()
+    for d in _game_dir_candidates():
+        if not d or not is_game_dir(d):
+            continue
+        key = os.path.normcase(str(Path(d).resolve()))
+        if key in seen:
+            continue
+        seen.add(key)
+        for app in apps_in(d) or ['Game files']:
+            out.append((app, Path(d)))
+    return out
 
 
 def find_game_dir():
@@ -360,8 +396,11 @@ def save_dirs(game=None):
         return save_dirs_in(chosen)
     out = []
     bases = [game.joinpath(*parts) for parts in SAVE_BASES]
-    if is_longshot(game):     # Longshot started from its launcher keeps the saves in %APPDATA%\Longshot\save
+    app = app_of(game)
+    if app == 'Longshot':     # Longshot started from its launcher keeps the saves in %APPDATA%\Longshot\save
         bases.insert(0, Path(os.environ.get('APPDATA', ''), 'Longshot', 'save'))
+    elif app == 'NX2navi':    # NX2navi's own saves: profile/save (Triforce moved its copies to user/save)
+        bases.reverse()
     for base in bases:
         found = [d for d in base.iterdir() if d.is_dir() and re.fullmatch(r'[0-9a-fA-F]{32}', d.name)] \
             if base.is_dir() else []
