@@ -1257,6 +1257,8 @@ class App(ttk.Frame):
 def main():
     root = tk.Tk()
     theme.apply(root)
+    import icons
+    icons.apply(root)
     root.geometry('1150x720')
     root.minsize(860, 460)
     app = App(root)

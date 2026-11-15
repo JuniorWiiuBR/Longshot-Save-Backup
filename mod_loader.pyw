@@ -418,6 +418,8 @@ def main():
         return
     root = tk.Tk()
     theme.apply(root)
+    import icons
+    icons.apply(root)
     root.geometry('760x520')
     root.minsize(560, 380)
     app = App(root)

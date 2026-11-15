@@ -1,3 +1,5 @@
+<img src="docs/icon.png" width="96" align="right" alt="Link's Toolbox icon">
+
 # Link's Toolbox
 
 **Mod loader and save editor for *The Legend of Zelda: Ocarina of Time* on [Triforce](https://git.triforceproject.com/triforce/source)**, the PC port.
@@ -10,7 +12,7 @@ One small Windows app to switch your mods on and off before you play, and to edi
 
 Get **`Link Toolbox.zip`** from the [Releases](../../releases) page, unzip it anywhere, and double-click **`Link Toolbox.bat`**.
 
-There's nothing to install: the zip brings its own Python. You need Windows 10 or 11 and a game built with Triforce. The toolbox finds the game where Triforce installed it, or asks you once for the folder that has `Triforce.exe`.
+The first time, it also makes a **Link Toolbox** shortcut with the toolbox's icon next to the `.bat` file (a `.bat` can't have an icon of its own), so you can use that shortcut from then on. There's nothing to install: the zip brings its own Python. You need Windows 10 or 11 and a game built with Triforce. The toolbox finds the game where Triforce installed it, or asks you once for the folder that has `Triforce.exe`.
 
 ## Mods included
 
@@ -74,6 +76,8 @@ Use a different game, mods or saves folder. Leave a box empty for the default.
 ### Look
 Five themes (Dark green, Dark grey, Dark blue, Midnight purple, Light), an accent colour, and a colour for every tab. Changes show at once and are remembered.
 
+**Icon:** Link's toolbox (the default), a Triforce, or a square cut from any save slot's picture (a slider picks which part). The icon is used on the window and the taskbar, and on the shortcuts, which you can also make on your Desktop.
+
 ![The Look tab](docs/look.png)
 
 ![Inventory, in the Dark blue theme](docs/inventory-dark-blue.png)
@@ -114,6 +118,7 @@ It writes `share\Link Toolbox.zip`. Upload that to a GitHub release.
 | `size_table.py` | Builds the size table for mods |
 | `theme.py` | Themes and tab colours |
 | `jpeg_win.py` | Turns the slot picture into PNG with Windows' own decoder |
+| `icons.py` | Draws the icons, makes `icon.ico` from them or from a slot picture, and makes the shortcuts |
 | `make_share_zip.py` | Builds `Link Toolbox.zip` |
 
 The names of the save's entries aren't stored in this repository. The toolbox reads them from your own game files the first time and keeps them in `names-cache.json`.

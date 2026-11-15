@@ -158,6 +158,11 @@ def apply(root, reload=True):
     s.configure('TCheckbutton', background=BG, foreground=TEXT, indicatorbackground=FIELD,
                 indicatorforeground=GOLD, upperbordercolor=BORDER, lowerbordercolor=BORDER)
     s.map('TCheckbutton', background=[('active', BG)], indicatorbackground=[('selected', FIELD), ('active', HOVER)])
+    s.configure('TRadiobutton', background=BG, foreground=TEXT, indicatorbackground=FIELD,
+                indicatorforeground=GOLD, upperbordercolor=BORDER, lowerbordercolor=BORDER)
+    s.map('TRadiobutton', background=[('active', BG)], indicatorbackground=[('selected', FIELD), ('active', HOVER)])
+    s.configure('Horizontal.TScale', background=GOLD, troughcolor=FIELD, bordercolor=BORDER,
+                lightcolor=GOLD, darkcolor=GOLD)
     for w in ('TEntry', 'TCombobox', 'TSpinbox'):
         s.configure(w, fieldbackground=FIELD, foreground=TEXT, background=PANEL, bordercolor=BORDER,
                     arrowcolor=GOLD, insertcolor=TEXT, lightcolor=FIELD, darkcolor=FIELD, padding=(4, 2))

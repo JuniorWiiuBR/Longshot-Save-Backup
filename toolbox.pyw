@@ -18,6 +18,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import nxsave  # noqa: E402
 import theme  # noqa: E402
+import icons  # noqa: E402
+import jpeg_win  # noqa: E402
 from tkinter import colorchooser  # noqa: E402
 
 BASE_TITLE = 'Link toolbox'
@@ -152,6 +154,8 @@ class Toolbox:
                 self.swatch(tabs, r, name, lambda n=name: self.look_tabs[n], col=c * 5 + 1)
             tabs.columnconfigure(c * 5 + 4, minsize=60)
 
+        self.make_icon_box(tab)
+
         bar = ttk.Frame(tab)
         bar.pack(fill='x', pady=(16, 0))
         ttk.Button(bar, text='Everything back to default', command=self.reset_look).pack(side='left')
@@ -159,6 +163,112 @@ class Toolbox:
                                                'the toolbox opens again.', foreground=theme.MUTED)
         self.look_status.pack(side='left', padx=(14, 0))
         return tab
+
+    # -- the icon: drawn ones or a square of a save slot's picture; shortcuts that show it
+    def make_icon_box(self, tab):
+        box = ttk.LabelFrame(tab, text='Icon', padding=(12, 8))
+        box.pack(fill='x', pady=(12, 0))
+        self.icon_preview = ttk.Label(box)
+        self.icon_preview.grid(row=0, column=0, rowspan=6, sticky='nw', padx=(0, 16))
+        self.icon_pixels = None
+        self.icon_kind = tk.StringVar(value="Link's toolbox")
+        r = 0
+        for name in icons.STYLES:
+            ttk.Radiobutton(box, text=name, value=name, variable=self.icon_kind,
+                            command=self.preview_icon).grid(row=r, column=1, sticky='w')
+            r += 1
+        ttk.Radiobutton(box, text='A save slot\'s picture:', value='slot', variable=self.icon_kind,
+                        command=self.preview_icon).grid(row=r, column=1, sticky='w')
+        self.icon_slot = tk.StringVar()
+        slot_box = ttk.Combobox(box, textvariable=self.icon_slot, state='readonly', width=12,
+                                values=[label for label, _ in self.saves.slots])
+        slot_box.grid(row=r, column=2, sticky='w', padx=(6, 0))
+        slot_box.bind('<<ComboboxSelected>>', lambda _e: (self.icon_kind.set('slot'), self.preview_icon()))
+        if self.saves.slots:
+            slot_box.current(0)
+        r += 1
+        ttk.Label(box, text='Which part (left to right)', foreground=theme.MUTED).grid(row=r, column=1, sticky='w',
+                                                                                      padx=(22, 0))
+        self.icon_offset = tk.DoubleVar(value=50)
+        ttk.Scale(box, from_=0, to=100, variable=self.icon_offset, length=180,
+                  command=lambda _v: self.icon_kind.get() == 'slot' and self.soon_preview()).grid(
+            row=r, column=2, sticky='w', padx=(6, 0))
+        r += 1
+        buttons = ttk.Frame(box)
+        buttons.grid(row=r, column=1, columnspan=3, sticky='w', pady=(8, 0))
+        ttk.Button(buttons, text='Use this icon', command=self.use_icon).pack(side='left')
+        ttk.Button(buttons, text='Shortcut on the Desktop', command=lambda: self.shortcut(1)).pack(side='left',
+                                                                                                padx=(14, 0))
+        ttk.Button(buttons, text='Shortcut next to Link Toolbox.bat', command=lambda: self.shortcut(0)).pack(
+            side='left', padx=(6, 0))
+        self.icon_status = ttk.Label(box, text='A .bat file cannot have an icon: start the toolbox from a shortcut '
+                                               'to see this one.', foreground=theme.MUTED)
+        self.icon_status.grid(row=r + 1, column=1, columnspan=3, sticky='w', pady=(6, 0))
+        self._icon_job = None
+        self.show_icon_file()
+
+    def show_icon_file(self):
+        """The preview: the icon in use."""
+        try:
+            icons.ensure()
+            self._icon_img = tk.PhotoImage(master=self.root, file=str(icons.PNG)).subsample(2)
+            self.icon_preview.configure(image=self._icon_img)
+        except tk.TclError:
+            pass
+
+    def soon_preview(self):
+        if self._icon_job:
+            self.root.after_cancel(self._icon_job)
+        self._icon_job = self.root.after(150, self.preview_icon)
+
+    def slot_picture(self):
+        """The PNG of the chosen slot's picture, None when it has none."""
+        label = self.icon_slot.get()
+        paths = dict(self.saves.slots).get(label, {})
+        if 'caption' not in paths:
+            return None
+        try:
+            sf = nxsave.SaveFile(paths['caption'])
+        except (OSError, ValueError):
+            return None
+        e = next((e for e in sf.entries if e.hash == save_editor.cat.PICTURE), None)
+        return jpeg_win.jpeg_to_png(e.value) if e is not None and isinstance(e.value, bytes) else None
+
+    def preview_icon(self):
+        self._icon_job = None
+        kind = self.icon_kind.get()
+        if kind == 'slot':
+            png = self.slot_picture()
+            if not png:
+                self.icon_status['text'] = f'{self.icon_slot.get() or "That slot"} has no picture.'
+                return
+            px = icons.from_picture(png, self.icon_offset.get() / 100)
+        else:
+            px = icons.STYLES[kind]()
+        self.icon_pixels = px
+        self._icon_img = tk.PhotoImage(master=self.root, data=icons.png_encode(256, 256, px), format='png'
+                                       ).subsample(2)
+        self.icon_preview.configure(image=self._icon_img)
+        self.icon_status['text'] = 'Preview. "Use this icon" puts it on the window and the shortcuts.'
+
+    def use_icon(self):
+        if self.icon_pixels is None:
+            self.preview_icon()
+        if self.icon_pixels is None:
+            return
+        try:
+            icons.save(self.icon_pixels)
+            icons.apply(self.root)
+        except OSError as err:
+            self.icon_status['text'] = f'The icon could not be written: {err}'
+            return
+        self.icon_status['text'] = ('Icon saved: on this window now, and on the shortcuts. (Windows may show the old '
+                                    'one for a moment.)')
+
+    def shortcut(self, which):
+        lnk = icons.shortcuts()[which]
+        ok = icons.make_shortcut(lnk)
+        self.icon_status['text'] = f'Shortcut made: {lnk}' if ok else f'The shortcut could not be made at {lnk}.'
 
     def swatch(self, parent, row, key, get, col=1):
         """A square of a colour, a Pick button and a Default button, in a row of a grid."""
@@ -305,6 +415,9 @@ class Toolbox:
 def main():
     root = tk.Tk()
     theme.apply(root)
+    icons.apply(root)
+    if '--selftest' not in sys.argv:
+        icons.first_run()
     if nxsave.find_game_dir() is None and '--selftest' not in sys.argv:
         root.withdraw()
         if not ask_game_dir(root):

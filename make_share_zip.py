@@ -19,7 +19,8 @@ HERE = Path(__file__).resolve().parent
 PYTHON = HERE.parent / 'python'
 OUT = HERE / 'share' / 'Link Toolbox.zip'
 APP = ('toolbox.pyw', 'mod_loader.pyw', 'save_editor.pyw', 'nxsave.py', 'oot_catalog.py', 'jpeg_win.py',
-       'size_table.py', 'theme.py')
+       'size_table.py', 'theme.py', 'icons.py')
+OPTIONAL = ('icon.ico', 'icon.png')     # the icon picked in the Look tab (made with the default one when missing)
 SKIP_PY = ('Lib', '__pycache__')      # (Lib holds only site-packages: 72 MB the toolbox never imports)
 
 BAT = '''@echo off
@@ -81,6 +82,9 @@ def main():
             z.write(HERE / 'LICENSE', root + 'LICENSE.txt')
         for name in APP:
             z.write(HERE / name, root + 'app/' + name)
+        for name in OPTIONAL:
+            if (HERE / name).is_file():
+                z.write(HERE / name, root + 'app/' + name)
         if '--no-mods' not in sys.argv:
             shared = share_mods()
             for mod in shared:

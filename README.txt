@@ -25,6 +25,10 @@ itself. It only touches your mods folder and your save files.
   1. Unzip the "Link Toolbox" folder anywhere (Desktop, Documents, ...).
   2. Double-click  Link Toolbox.bat
 
+The first time, it also makes a "Link Toolbox" shortcut with the toolbox's
+icon next to the .bat (a .bat file can't have an icon of its own). Use that
+shortcut from then on, or make one on your Desktop in the Look tab.
+
 The first time, the toolbox looks for your game where Triforce installed it.
 If it can't find it, it asks once: pick the folder that has Triforce.exe
 and the "romfs" folder in it. You can change it later in the Folders tab.
@@ -123,6 +127,9 @@ Inventory tab to try them.
    Choose a theme (Dark green, Dark grey, Dark blue, Midnight purple, Light),
    an accent colour, and a colour for every tab. Changes show at once and
    are remembered.
+   Icon: Link's toolbox, a Triforce, or a square of any save slot's picture
+   (the slider picks which part). "Use this icon" puts it on the window and
+   the shortcuts. "Shortcut on the Desktop" makes one there.
 
 
 -------------------------------------------------------------------------------
@@ -181,6 +188,8 @@ Inventory tab to try them.
      size_table.py       builds the size table for mods
      theme.py            the colours
      jpeg_win.py         shows the slot picture (uses Windows' own decoder)
+     icons.py            the icon and the shortcuts
+     icon.ico, icon.png  the icon in use
   mods\                the five mods above (install with Mods tab > Add mods...)
   python\              the Python the toolbox runs with (no install needed)
 
