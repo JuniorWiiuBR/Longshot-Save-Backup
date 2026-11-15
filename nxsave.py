@@ -243,7 +243,19 @@ class SaveFile:
 
 # ------------------------------------------------------------------------------------- the install's folders
 
-GAME_PROCESSES = ('Triforce.exe', 'TriforceSetup.exe', 'ocarina.exe')
+GAME_PROCESSES = ('Triforce.exe', 'TriforceSetup.exe', 'ocarina.exe', 'longshot.exe', 'LongshotLauncher.exe')
+# the game's program in its folder: Triforce, or Longshot (another PC port of the game, by MagicBeanDev)
+GAME_EXES = ('Triforce.exe', 'longshot.exe')
+
+
+def game_exe(game=None):
+    """The program that starts the game in its folder (Triforce.exe or longshot.exe), None when there is none."""
+    game = Path(game or game_dir())
+    return next((game / n for n in GAME_EXES if (game / n).is_file()), None)
+
+
+def is_longshot(game=None):
+    return (Path(game or game_dir()) / 'longshot.exe').is_file()
 
 
 def game_running():
@@ -258,9 +270,9 @@ def game_running():
 
 
 def is_game_dir(d):
-    """The game's folder: the one with Triforce.exe and the game's files (romfs)."""
+    """The game's folder: the one with Triforce.exe (or Longshot's longshot.exe) and the game's files (romfs)."""
     d = Path(d)
-    return d.is_dir() and ((d / 'Triforce.exe').is_file() or (d / 'romfs').is_dir())
+    return d.is_dir() and (any((d / n).is_file() for n in GAME_EXES) or (d / 'romfs').is_dir())
 
 
 def _game_dir_candidates():
@@ -279,6 +291,12 @@ def _game_dir_candidates():
     except OSError:
         pass
     yield Path(local, 'Programs', 'NX2navi', 'game')
+    # Longshot: its launcher builds the game in Games\Longshot (or a folder in it, one per version)
+    longshot = Path(os.environ.get('USERPROFILE', '~')).expanduser() / 'Games' / 'Longshot'
+    yield longshot
+    if longshot.is_dir():
+        yield from sorted((p for p in longshot.iterdir() if (p / 'longshot.exe').is_file()),
+                          key=lambda p: p.stat().st_mtime, reverse=True)
 
 
 def find_game_dir():
@@ -341,8 +359,10 @@ def save_dirs(game=None):
     if chosen and Path(chosen).is_dir():
         return save_dirs_in(chosen)
     out = []
-    for parts in SAVE_BASES:
-        base = game.joinpath(*parts)
+    bases = [game.joinpath(*parts) for parts in SAVE_BASES]
+    if is_longshot(game):     # Longshot started from its launcher keeps the saves in %APPDATA%\Longshot\save
+        bases.insert(0, Path(os.environ.get('APPDATA', ''), 'Longshot', 'save'))
+    for base in bases:
         found = [d for d in base.iterdir() if d.is_dir() and re.fullmatch(r'[0-9a-fA-F]{32}', d.name)] \
             if base.is_dir() else []
         out += sorted(found, key=lambda d: max((f.stat().st_mtime for f in d.rglob('*.sav')), default=0), reverse=True)
@@ -610,30 +630,39 @@ class Names:
 
 def load_names(game=None, progress=lambda text: None, rebuild=False):
     """The names, from the cache when it was made from the same game files, else read from the game files."""
-    game = game or game_dir()
+    game = Path(game or game_dir())
     try:
         if (game / 'romfs' / 'index.json').is_file():
             sha = json.loads((game / 'romfs' / 'index.json').read_text(encoding='utf-8')).get('romfs_sha256', '')
         else:
-            marker = game / '.triforce_romfs'
             if not (game / 'romfs').is_dir():
                 return Names()
-            sha = 'loose:' + (marker.read_text(encoding='utf-8', errors='replace').strip() if marker.is_file() else '')
+            # (the marker each builder leaves next to the game files it wrote: Triforce's, or Longshot's)
+            marker = next((game / m for m in ('.triforce_romfs', '.longshot_romfs') if (game / m).is_file()), None)
+            sha = 'loose:' + (marker.read_text(encoding='utf-8', errors='replace').strip() if marker else '')
     except (OSError, ValueError):
         return Names()                     # no game files: the editor still works, with hashes for names
+    mine = cache_file(game)
     if not rebuild:
-        try:
-            raw = json.loads(CACHE.read_text(encoding='utf-8'))
-            if raw.get('version') == CACHE_VERSION and raw.get('romfs') == sha:
-                return Names(raw)
-        except (OSError, ValueError):
-            pass
+        for f in (mine, CACHE):            # (CACHE: the one file older versions kept, for whichever game)
+            try:
+                raw = json.loads(f.read_text(encoding='utf-8'))
+                if raw.get('version') == CACHE_VERSION and raw.get('romfs') == sha:
+                    return Names(raw)
+            except (OSError, ValueError):
+                pass
     raw = build_names(game, progress)
     try:
-        CACHE.write_text(json.dumps(raw), encoding='utf-8')
+        mine.write_text(json.dumps(raw), encoding='utf-8')
     except OSError:
         pass
     return Names(raw)
+
+
+def cache_file(game):
+    """The names read from one game folder's files: one file per game folder (Triforce and Longshot side by side)."""
+    key = str(Path(game).resolve()).lower().encode('utf-8')
+    return HERE / f'names-cache-{murmur3(key):08x}.json'
 
 
 # ------------------------------------------------------------------------------------------------ command line

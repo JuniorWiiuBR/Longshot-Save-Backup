@@ -2,7 +2,7 @@
 
 # Link's Toolbox
 
-**Mod loader and save editor for *The Legend of Zelda: Ocarina of Time* on [Triforce](https://git.triforceproject.com/triforce/source)**, the PC port.
+**Mod loader and save editor for *The Legend of Zelda: Ocarina of Time* on [Triforce](https://git.triforceproject.com/triforce/source)**, the PC port. It also works with [Longshot](https://git.magicbean.dev/MagicBeanDev/Longshot) (early support, since Longshot is still in development; see [Longshot](#longshot) below).
 
 One small Windows app to switch your mods on and off before you play, and to edit your saves (hearts, magic, rupees, items, ammo, bottles, keys and story progress) using the names the game itself uses.
 
@@ -12,7 +12,7 @@ One small Windows app to switch your mods on and off before you play, and to edi
 
 Get **`Link Toolbox.zip`** from the [Releases](../../releases) page, unzip it anywhere, and double-click **`Link Toolbox.bat`**.
 
-The first time, it also makes a **Link Toolbox** shortcut with the toolbox's icon next to the `.bat` file (a `.bat` can't have an icon of its own), so you can use that shortcut from then on. There's nothing to install: the zip brings its own Python. You need Windows 10 or 11 and a game built with Triforce. The toolbox finds the game where Triforce installed it, or asks you once for the folder that has `Triforce.exe`.
+The first time, it also makes a **Link Toolbox** shortcut with the toolbox's icon next to the `.bat` file (a `.bat` can't have an icon of its own), so you can use that shortcut from then on. There's nothing to install: the zip brings its own Python. You need Windows 10 or 11 and a game built with Triforce (or Longshot). The toolbox finds the game where Triforce installed it, or asks you once for the folder that has `Triforce.exe` (or `longshot.exe`).
 
 ## Mods included
 
@@ -84,6 +84,19 @@ Five themes (Dark green, Dark grey, Dark blue, Midnight purple, Light), an accen
 
 ![Inventory, in the Dark blue theme](docs/inventory-dark-blue.png)
 
+## Longshot
+
+[Longshot](https://git.magicbean.dev/MagicBeanDev/Longshot) is another PC port of the same game, by MagicBeanDev (a continuation of Hookshot). It loads mods by the same rules as Triforce: a `mods` folder in the game folder, a `romfs` folder in each mod, `_` or `-` at the start of a name turns a mod off, the mod whose name sorts last wins, and only one size table is used. That means the Mods tab, the included mods and the size table work with it too. Its saves have the same layout, so the save editor reads them as well.
+
+**Longshot is still in development** (release candidates for now), so support here is early: anything Longshot changes may need a toolbox update.
+
+To use it, open the **Folders** tab, set **Game folder** to Longshot's game folder (the one with `longshot.exe`, usually in `Games\Longshot` in your user folder), press **Apply**, then open the toolbox again. After that:
+
+- **Mods:** in `mods` in that game folder.
+- **Saves:** in `%APPDATA%\Longshot\save` when the game is started from Longshot's launcher, or in `user\save` in the game folder.
+- **Save and play:** starts `longshot.exe`.
+- If Triforce isn't installed, the toolbox finds Longshot's game folder by itself.
+
 ## Safety
 
 - **Close the game before saving a save.** A running game writes over the save files when it saves.
@@ -123,10 +136,12 @@ It writes `share\Link Toolbox.zip`. Upload that to a GitHub release.
 | `icons.py` | Draws the icons, makes `icon.ico` from them or from a slot picture, and makes the shortcuts |
 | `make_share_zip.py` | Builds `Link Toolbox.zip` |
 
-The names of the save's entries aren't stored in this repository. The toolbox reads them from your own game files the first time and keeps them in `names-cache.json`.
+The names of the save's entries aren't stored in this repository. The toolbox reads them from your own game files the first time and keeps them in `names-cache-<number>.json` (one for each game folder, so Triforce and Longshot each have their own).
 
 ## Credits
 
 Link's Toolbox by **Cum_Dumpster**, released under the [MIT License](LICENSE).
+
+Works with [Triforce](https://git.triforceproject.com/triforce/source) and [Longshot](https://git.magicbean.dev/MagicBeanDev/Longshot) (by MagicBeanDev and the Longshot contributors, a continuation of Hookshot by NotRexed). Neither is part of this project, and neither ships with it.
 
 This is a fan-made tool, not affiliated with or endorsed by Nintendo. The source code in this repository contains no game files. The included mods are changed copies of a few game files, and are only in the release download. You need your own copy of the game.

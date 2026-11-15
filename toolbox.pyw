@@ -39,16 +39,16 @@ mod_loader = save_editor = None     # (loaded by main once the game's folder is 
 
 def ask_game_dir(root):
     """On a PC where the game is not where it usually is: ask once for its folder, kept in the settings."""
-    messagebox.showinfo(BASE_TITLE, 'Where is the game?\n\nPick the folder that has Triforce.exe in it (the game '
-                        'folder Triforce built, with the romfs folder inside).', parent=root)
+    messagebox.showinfo(BASE_TITLE, 'Where is the game?\n\nPick the folder that has Triforce.exe (or Longshot\'s longshot.exe) in it: '
+                        'the game folder it built, with the romfs folder inside.', parent=root)
     while True:
-        path = filedialog.askdirectory(parent=root, title='The game folder (with Triforce.exe)', mustexist=True)
+        path = filedialog.askdirectory(parent=root, title='The game folder (with Triforce.exe or longshot.exe)', mustexist=True)
         if not path:
             return False
         if nxsave.is_game_dir(path):
             nxsave.save_settings({**nxsave.load_settings(), 'game_dir': os.path.normpath(path)})
             return True
-        if not messagebox.askretrycancel(BASE_TITLE, f'{path}\n\nhas no Triforce.exe or romfs folder.', parent=root):
+        if not messagebox.askretrycancel(BASE_TITLE, f'{path}\n\nhas no Triforce.exe, longshot.exe or romfs folder.', parent=root):
             return False
 
 
@@ -95,7 +95,7 @@ class Toolbox:
         self.save_var = tk.StringVar(value=settings.get('save_dir', ''))
         self.game_at_start = nxsave.game_dir()
         rows = (('Game folder', self.game_var, self.found_game(),
-                 'The folder with Triforce.exe and romfs. Changing it takes effect when the toolbox is opened again.'),
+                 'The folder with Triforce.exe (or Longshot\'s longshot.exe) and romfs. Changing it takes effect when the toolbox is opened again.'),
                 ('Mods folder', self.mods_var, mod_loader.DEFAULT_MODS,
                  'The folder of mod folders the Mods tab lists and switches on and off.'),
                 ('Saves folder', self.save_var, nxsave.game_dir() / 'user' / 'save',
@@ -111,9 +111,9 @@ class Toolbox:
             ttk.Label(tab, text=f'{hint}\nEmpty: the default, {default}', foreground=theme.MUTED).grid(
                 row=r + 1, column=1, columnspan=3, sticky='w', padx=8)
             r += 2
-        ttk.Label(tab, text='Triforce itself only loads mods from the mods folder next to Triforce.exe '
+        ttk.Label(tab, text='Triforce and Longshot only load mods from the mods folder in the game folder '
                             f'({mod_loader.DEFAULT_MODS}). Mods kept anywhere else can be switched here but '
-                            'the game will not see them, unless that folder is next to another Triforce.exe '
+                            'the game will not see them, unless that folder is next to another game program '
                             '(then Save and play starts that one).',
                   foreground=theme.WARN, wraplength=760, justify='left').grid(row=r, column=0, columnspan=4,
                                                                               sticky='w', pady=(18, 0))
@@ -344,7 +344,7 @@ class Toolbox:
         mods_dir, save_dir = self.mods_var.get().strip().strip('"'), self.save_var.get().strip().strip('"')
         game = self.game_var.get().strip().strip('"')
         if game and not nxsave.is_game_dir(game):
-            messagebox.showerror('Folders', f'{game}\n\nhas no Triforce.exe or romfs folder: not the game folder.',
+            messagebox.showerror('Folders', f'{game}\n\nhas no Triforce.exe, longshot.exe or romfs folder: not the game folder.',
                                  parent=self.root)
             return
         for path, what in ((mods_dir, 'mods'), (save_dir, 'saves')):

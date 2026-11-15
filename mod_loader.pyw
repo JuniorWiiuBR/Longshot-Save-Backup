@@ -25,21 +25,20 @@ import theme  # noqa: E402
 GAME = nxsave.game_dir()
 DEFAULT_MODS = GAME / 'mods'
 MODS = DEFAULT_MODS
-GAME_EXE = GAME / 'Triforce.exe'
+GAME_EXE = nxsave.game_exe(GAME) or GAME / 'Triforce.exe'
 
 
 def set_mods_dir(path=None):
-    """Use another mods folder (the toolbox's Folders tab); None: game/mods. Save and play starts the Triforce.exe
-    next to that folder when there is one there, else the game's."""
+    """Use another mods folder (the toolbox's Folders tab); None: game/mods. Save and play starts the game program
+    (Triforce.exe, or Longshot's longshot.exe) next to that folder when there is one there, else the game's."""
     global MODS, GAME_EXE
     MODS = Path(path) if path else DEFAULT_MODS
-    beside = MODS.parent / 'Triforce.exe'
-    GAME_EXE = beside if beside.is_file() else GAME / 'Triforce.exe'
+    GAME_EXE = nxsave.game_exe(MODS.parent) or nxsave.game_exe(GAME) or GAME / 'Triforce.exe'
 
 
 set_mods_dir(nxsave.load_settings().get('mods_dir'))
 PREFIX = re.compile(r'^(?:[-_]+)?(?:\d+-)?')
-RUNNING = ('Triforce.exe', 'TriforceSetup.exe', 'ocarina.exe')
+RUNNING = nxsave.GAME_PROCESSES
 # a short note on mods these scripts made, shown under the list when the mod is picked
 NOTES = {
     'Young Link Adult Motions': 'Gives young Link the adult\'s motions (big swords, hookshot, bow, hammer). It carries '
@@ -245,7 +244,7 @@ class App(ttk.Frame):
         problems = 0
         for i, m in enumerate(self.mods):
             if not m.loads:
-                state, tag = 'not a RomFS mod: Triforce does not load it', 'off'
+                state, tag = 'not a RomFS mod: the game does not load it', 'off'
             elif not m.on:
                 state, tag = '', 'off'
             else:
@@ -272,7 +271,7 @@ class App(ttk.Frame):
         state = 'disabled' if busy else 'normal'
         self.save_btn['state'] = state
         self.play_btn['state'] = state
-        self.on_title(('* ' if self.dirty else '') + 'Triforce mod loader')
+        self.on_title(('* ' if self.dirty else '') + 'Mod loader')
         self.show_note()
 
     def selected(self):

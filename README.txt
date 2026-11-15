@@ -1,6 +1,6 @@
 ===============================================================================
                               LINK'S TOOLBOX
-          Mod loader + save editor for Zelda: Ocarina of Time (Triforce)
+   Mod loader + save editor for Zelda: Ocarina of Time (Triforce / Longshot)
                               by Cum_Dumpster
 ===============================================================================
 
@@ -30,13 +30,32 @@ icon next to the .bat (a .bat file can't have an icon of its own). Use that
 shortcut from then on, or make one on your Desktop in the Look tab.
 
 The first time, the toolbox looks for your game where Triforce installed it.
-If it can't find it, it asks once: pick the folder that has Triforce.exe
+If it can't find it, it asks once: pick the folder that has Triforce.exe (or longshot.exe)
 and the "romfs" folder in it. You can change it later in the Folders tab.
 
 The first time you open the save editor, it reads the item and flag names
 from your game files. That takes a little while, but only once.
 
-Needs Windows 10 or 11 and a game built with Triforce.
+Needs Windows 10 or 11 and a game built with Triforce (or Longshot, below).
+
+
+-------------------------------------------------------------------------------
+ LONGSHOT (EARLY SUPPORT)
+-------------------------------------------------------------------------------
+
+Longshot is another PC port of the same game, by MagicBeanDev
+(https://git.magicbean.dev/MagicBeanDev/Longshot). It loads mods by the same
+rules as Triforce, and its saves look the same, so the Mods tab, the included
+mods and the save editor work with it too.
+
+Longshot is still in development, so this support is early: a change in
+Longshot may need a toolbox update.
+
+To use it: Folders tab > Game folder > pick Longshot's game folder (the one
+with longshot.exe, usually Games\Longshot in your user folder) > Apply, then
+open the toolbox again. Its saves are found in %APPDATA%\Longshot\save, and
+Save and play starts longshot.exe. (If Triforce isn't installed, the toolbox
+finds Longshot by itself.)
 
 
 -------------------------------------------------------------------------------
@@ -127,8 +146,8 @@ Inventory tab to try them.
 
  FOLDERS
    Use a different game folder, mods folder or saves folder. Leave a box
-   empty to use the default. (Triforce only loads mods from the "mods" folder
-   next to Triforce.exe.)
+   empty to use the default. (Triforce and Longshot only load mods from the
+   "mods" folder in the game folder.)
 
  LOOK
    Choose a theme (Dark green, Dark grey, Dark blue, Midnight purple, Light),
@@ -159,7 +178,8 @@ Inventory tab to try them.
 
  Where are my saves?
    In the game folder, under  user\save\<long number>\slot_00 ... slot_05
-   (slot_00 is Slot 1).
+   (slot_00 is Slot 1). Longshot started from its launcher keeps them in
+   %APPDATA%\Longshot\save\<long number>\ instead.
 
  I edited my save but nothing changed in the game.
    The game was probably still running and wrote over the save. Close it,
@@ -167,7 +187,7 @@ Inventory tab to try them.
 
  A mod doesn't show up in the game.
    Check it is ticked in the Mods tab and that you pressed Save. Mods must be
-   inside the "mods" folder next to Triforce.exe, each in its own folder with
+   inside the "mods" folder in the game folder, each in its own folder with
    a "romfs" folder inside. Cheat (.txt) and code mods are not supported by
    Triforce. The Notes column says when a mod isn't a RomFS mod.
 
@@ -200,7 +220,7 @@ Inventory tab to try them.
   mods\                the five mods above (install with Mods tab > Add mods...)
   python\              the Python the toolbox runs with (no install needed)
 
-  Made by the toolbox: app\backups (save backups), app\names-cache.json
+  Made by the toolbox: app\backups (save backups), app\names-cache-*.json
   (the names read from your game), app\toolbox_settings.json (your folders
   and colours).
 

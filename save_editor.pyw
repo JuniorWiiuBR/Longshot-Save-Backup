@@ -1300,10 +1300,11 @@ class App(ttk.Frame):
             self.on_play()
 
     def start_game(self):
-        """On its own (not in the toolbox): start Triforce.exe and close this window."""
-        exe = nxsave.game_dir() / 'Triforce.exe'
-        if not exe.is_file():
-            messagebox.showerror('Save and play', f'{exe} is not there.', parent=self)
+        """On its own (not in the toolbox): start the game (Triforce.exe or longshot.exe) and close this window."""
+        exe = nxsave.game_exe()
+        if exe is None:
+            messagebox.showerror('Save and play', f'No Triforce.exe or longshot.exe in {nxsave.game_dir()}.',
+                                 parent=self)
             return
         import subprocess
         subprocess.Popen([str(exe)], cwd=str(exe.parent))
