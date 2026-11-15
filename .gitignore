@@ -1,0 +1,25 @@
+# Only the toolbox goes on GitHub. Everything else in this folder stays private:
+# save backups, the names read from the game (names-cache.json), your settings,
+# the built zip, staging files and the mod-building scripts (they work on game files).
+*
+!.gitignore
+!.gitattributes
+!LICENSE
+!README.md
+!README.txt
+!docs/
+!docs/*.png
+
+# the toolbox
+!toolbox.pyw
+!mod_loader.pyw
+!save_editor.pyw
+!nxsave.py
+!oot_catalog.py
+!size_table.py
+!theme.py
+!jpeg_win.py
+!make_share_zip.py
+!Link Toolbox.bat
+!Mod Loader.bat
+!Save Editor.bat
