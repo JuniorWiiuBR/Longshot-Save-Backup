@@ -396,6 +396,13 @@ class App(ttk.Frame):
         spin(f, 5, 'Rupees', 'rupees', 0, 1000)
         buttons(f, 6, ('Full hearts', lambda: self.fill_stat('hearts')),
                 ('Full magic', lambda: self.fill_stat('magic')), ('Full wallet', lambda: self.fill_stat('rupees')))
+        age = ttk.Frame(f)
+        age.grid(row=7, column=0, columnspan=3, sticky='w', pady=(10, 0))
+        ttk.Label(age, text='Age').pack(side='left')
+        self.age_label = ttk.Label(age, text='', foreground=theme.GOLD, font=('Segoe UI', 9, 'bold'))
+        self.age_label.pack(side='left', padx=(8, 6))
+        self.age_btn = ttk.Button(age, text='Switch age', command=self.switch_age)
+        self.age_btn.pack(side='left')
 
         f = box(0, 1, 'Slot picture')
         self.picture = ttk.Label(f, text='', foreground=theme.MUTED, cursor='hand2', anchor='center')
@@ -733,6 +740,7 @@ class App(ttk.Frame):
         for tree in (self.inv_tree, self.flag_tree, self.tree):
             tag_tree(tree)
         self.summary.configure(foreground=theme.SOFT)
+        self.age_label.configure(foreground=theme.GOLD)
         self.stats_note.configure(foreground=theme.ERROR)
 
     # ------------------------------------------------------------------------------------------------ Stats tab
@@ -793,6 +801,13 @@ class App(ttk.Frame):
             v['wallet'].set(f'{w[1]} ({w[2]})' if w else (wallet or '?'))
             v['rupees'].set(str(self.val(cat.RUPEES, default='')))
             v['rupees:spin']['to'] = w[2] if w else 9999
+            child = self.val(cat.IS_CHILD)
+            self.age_label['text'] = '?' if child is None else 'Young Link' if child else 'Adult Link'
+            self.age_btn['text'] = 'Switch to adult' if child else 'Switch to young'
+            self.age_btn['state'] = 'disabled' if child is None else 'normal'
+            here = self.val(cat.CURRENT_MAP)
+            if child is not None and cat.other_age_map(here, not child) is None:
+                self.age_label['text'] += '  (in a dungeon)' if here and '_' not in here else ''
             for key, label, size_h, name_h, prefix, sizes in cat.BAGS:
                 now, may = self.bag_sizes(key)
                 box = v[f'bag:{key}:box']
@@ -957,6 +972,31 @@ class App(ttk.Frame):
             self.put(cat.CAPTION_RUPEES, most, 'caption')
         self.fill_stats()
         self.edited()
+
+    def switch_age(self):
+        """Young to adult or back: the map Link is saved on goes to the other age's version of it (that is what the
+        game goes by), with 'is a child' and the file-select screen's map to match. Only outdoors, where each area has
+        a map for each age; in a dungeon both ages share one map. Held items stay: each age keeps what it had."""
+        if not self.slot or self.val(cat.IS_CHILD) is None:
+            return
+        to_child = not self.val(cat.IS_CHILD)
+        here = self.val(cat.CURRENT_MAP)
+        there = cat.other_age_map(here, to_child)
+        if there is None:
+            messagebox.showinfo('Switch age', f'Link is saved in {here or "a place"}, which has one map for both ages '
+                                '(a dungeon or a house), so his age cannot be changed here.\n\nIn the game, go outside '
+                                '(Kakariko, Hyrule Field, Kokiri Forest, the Market...), save there, then switch.',
+                                parent=self)
+            return
+        self.put(cat.CURRENT_MAP, there)
+        caption = self.val(cat.CAPTION_MAP, 'caption')
+        if caption:
+            self.put(cat.CAPTION_MAP, caption.replace(here, there), 'caption')
+        self.put(cat.IS_CHILD, to_child)
+        self.fill_stats()
+        self.edited()
+        self.set_status(f'Link is {"young" if to_child else "an adult"} now ({there})  -  press Save (with the game '
+                        'closed), then load the slot.')
 
     def fill_amounts(self):
         if not self.slot:

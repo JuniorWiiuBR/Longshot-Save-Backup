@@ -145,6 +145,26 @@ MAGIC_METERS = ((0, 'No magic meter', ()),
 
 PICTURE = 0x63696A32     # caption.sav: the picture taken when the slot was saved (a JPEG)
 
+# -- Link's age (found by saving one slot as adult, then as child, and comparing; unnamed in the game files)
+IS_CHILD = 0x46080375            # on: young Link (the game writes it; the map below is what decides his age)
+# the map Link is saved on. Outdoors each area has a young and an adult map ("KakarikoVillage_Child" / "_Adult"):
+# the game loads that map, and its version is what makes Link young or adult. Dungeons have one map for both ages.
+CURRENT_MAP = 'Sequence_CurrentBanc'               # progress.sav: "KakarikoVillage_Adult"
+CAPTION_MAP = 0x0CCCC6CD                           # caption.sav: "KakarikoVillage/KakarikoVillage_Adult"
+BOTH_AGES = ('DeathMountainCrater', 'DeathMountainTrail', 'DesertColossus', 'GerudoValley', 'GoronCity', 'Graveyard',
+             'HountedWasteland', 'HyruleField', 'KakarikoVillage', 'KokiriForest', 'LostWood', 'Market',
+             'SacredForestMeadow', 'ZoraDomain', 'ZoraFountain', 'ZoraRiver')   # (the game files' Banc folder)
+
+
+def other_age_map(name, to_child):
+    """The other age's version of a map name ("KakarikoVillage_Adult" -> "KakarikoVillage_Child"), or None when the
+    map has no version for that age (a dungeon, a house, Gerudo Fortress)."""
+    import re
+    m = re.match(r'^(.*?)([A-Za-z0-9]+)_(Child|Adult)(\b.*)$', name or '')
+    if not m or m.group(2) not in BOTH_AGES:
+        return None
+    return f'{m.group(1)}{m.group(2)}_{"Child" if to_child else "Adult"}{m.group(4)}'
+
 # -- rupees
 RUPEES, CAPTION_RUPEES = 'PlayerStatus.CurrentRupee', 'CaptionData.CurrentRupee'
 WALLET_NAME = 0x3E42AFFA      # the wallet's item name (text)
@@ -203,6 +223,8 @@ EXTRA_NAMES = {
     WALLET_NAME: 'PlayerStatus.Wallet (item name)',
     RUPEE_LIMIT: 'PlayerStatus.RupeeLimit',
     PICTURE: 'CaptionData.Picture (JPEG)',
+    IS_CHILD: 'PlayerStatus.IsChild (young Link)',
+    CAPTION_MAP: 'CaptionData.Banc (the map, for the file-select screen)',
     174442925: 'PouchData.SUAx',
     2269937364: 'Progress ID',
 }

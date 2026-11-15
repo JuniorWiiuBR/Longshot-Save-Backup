@@ -45,12 +45,14 @@ Pick a save slot. Each slot shows its summary and the picture the game took when
 
 | Tab | What you can do |
 |---|---|
-| **Stats** | Hearts (in quarter steps) and heart containers; magic meter and magic; wallet and rupees; bag and quiver sizes; ammo and counts; the five bottles and their contents; small keys for every dungeon. Quick buttons: Full hearts, Full magic, Full wallet, Fill all, All keys. |
+| **Stats** | Hearts (in quarter steps) and heart containers; magic meter and magic; wallet and rupees; **switch Link between young and adult**; bag and quiver sizes; ammo and counts; the five bottles and their contents; small keys for every dungeon. Quick buttons: Full hearts, Full magic, Full wallet, Fill all, All keys. |
 | **Inventory** | All 104 items by their in-game names, with group and usual age. Give or take away items, pick several at once, or give everything missing. Won't take away equipped items. |
 | **Progress** | More than 6,000 story flags (events, talks and Navi hints, dungeons, places, items found, mini-games...), searchable and filtered by group and state. |
 | **All entries** | Every value in the slot's files, for advanced editing. |
 
 Every list sorts by any column: click the heading, and click again to reverse.
+
+**Switching age:** a save keeps Link's age in the map he's saved on. Outdoors, each area has a young and an adult map (`KakarikoVillage_Child` and `KakarikoVillage_Adult`), so **Switch to adult / young** moves him to the other age's map, together with the file-select screen and the save's "is a child" flag. Dungeons and houses have one map for both ages, so the editor asks you to save outside first.
 
 **Stats**: hearts, magic, rupees, ammo, bottles, keys, bags and the slot picture
 

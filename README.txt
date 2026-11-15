@@ -95,6 +95,12 @@ Inventory tab to try them.
      bombchus, arrows, beans, scrub seeds, skulltula tokens, heart pieces),
      the five bottles and their contents, and small keys for every dungeon.
      Quick buttons: Full hearts, Full magic, Full wallet, Fill all, All keys.
+     Age: shows Young Link or Adult Link, and "Switch to adult / young"
+     changes it. It works where Link is saved outdoors (Kakariko, Hyrule
+     Field, Kokiri Forest, the Market, Lost Woods, Death Mountain, Goron City,
+     the Zora areas, Graveyard, Gerudo Valley...): those places have a young
+     and an adult map, and he loads into the other age's one. In a dungeon or
+     a house both ages share one map, so save outside first.
 
    Inventory
      All 104 items by their in-game names, with their group (Swords, Shields,
