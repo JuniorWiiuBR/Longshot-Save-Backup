@@ -122,7 +122,8 @@ Inventory tab to try them.
      account) for advanced editing. Double-click a value to change it.
 
    Every list can be sorted: click a column heading, click again to reverse.
-   Edited values show in red until you save.
+   Edited values show in red until you save. "Save and play" saves your edits
+   and starts the game (with the mods as set in the Mods tab).
 
  FOLDERS
    Use a different game folder, mods folder or saves folder. Leave a box

@@ -243,6 +243,20 @@ class SaveFile:
 
 # ------------------------------------------------------------------------------------- the install's folders
 
+GAME_PROCESSES = ('Triforce.exe', 'TriforceSetup.exe', 'ocarina.exe')
+
+
+def game_running():
+    """The name of the game's program when it is running, else ''."""
+    import subprocess
+    try:
+        out = subprocess.run(['tasklist', '/NH'], capture_output=True, text=True,
+                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)).stdout.lower()
+    except OSError:
+        return ''
+    return next((n for n in GAME_PROCESSES if n.lower() in out), '')
+
+
 def is_game_dir(d):
     """The game's folder: the one with Triforce.exe and the game's files (romfs)."""
     d = Path(d)

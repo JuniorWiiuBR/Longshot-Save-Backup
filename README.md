@@ -50,7 +50,7 @@ Pick a save slot. Each slot shows its summary and the picture the game took when
 | **Progress** | More than 6,000 story flags (events, talks and Navi hints, dungeons, places, items found, mini-games...), searchable and filtered by group and state. |
 | **All entries** | Every value in the slot's files, for advanced editing. |
 
-Every list sorts by any column: click the heading, and click again to reverse.
+Every list sorts by any column: click the heading, and click again to reverse. **Save and play** saves your edits and starts the game, with the mods as set in the Mods tab.
 
 **Switching age:** a save keeps Link's age in the map he's saved on. Outdoors, each area has a young and an adult map (`KakarikoVillage_Child` and `KakarikoVillage_Adult`), so **Switch to adult / young** moves him to the other age's map, together with the file-select screen and the save's "is a child" flag. Dungeons and houses have one map for both ages, so the editor asks you to save outside first.
 

@@ -72,7 +72,9 @@ class Toolbox:
         self.book.pack(fill='both', expand=True, padx=6, pady=6)
         self.mods = mod_loader.App(self.book, on_title=lambda t: self.set_title('mods', t), after_play=self.after_play)
         self.book.add(self.mods, text='Mods')
-        self.saves = save_editor.App(self.book, on_title=lambda t: self.set_title('saves', t))
+        # (Save and play in the save editor: its edits are saved, then the Mods tab saves the mods and starts the game)
+        self.saves = save_editor.App(self.book, on_title=lambda t: self.set_title('saves', t),
+                                     on_play=lambda: self.mods.play())
         self.book.add(self.saves, text='Save editor')
         self.folders = self.make_folders_tab()
         self.book.add(self.folders, text='Folders')

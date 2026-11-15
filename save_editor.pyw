@@ -280,9 +280,10 @@ class App(ttk.Frame):
     """The save editor, as a frame: in a window of its own (main) or as a tab of the Link toolbox (toolbox.pyw).
     on_title(text) gets the title it would like its window to have."""
 
-    def __init__(self, master=None, on_title=None):
+    def __init__(self, master=None, on_title=None, on_play=None):
         super().__init__(master)
         self.on_title = on_title or (lambda text: self.winfo_toplevel().title(text))
+        self.on_play = on_play or self.start_game       # (the toolbox starts the game through its Mods tab)
         self.names = nxsave.Names()
         self.slot = None
         self.slots = []
@@ -305,8 +306,10 @@ class App(ttk.Frame):
         bottom.pack(side='bottom', fill='x')
         self.status = ttk.Label(bottom, text='', anchor='w')
         self.status.pack(side='left', fill='x', expand=True)
+        self.play_btn = ttk.Button(bottom, text='Save and play', command=self.save_and_play)
+        self.play_btn.pack(side='right')
         self.save_btn = ttk.Button(bottom, text='Save', command=self.save, state='disabled')
-        self.save_btn.pack(side='right')
+        self.save_btn.pack(side='right', padx=(0, 6))
         self.revert_btn = ttk.Button(bottom, text='Undo all edits', command=self.revert, state='disabled')
         self.revert_btn.pack(side='right', padx=(0, 8))
         ttk.Button(bottom, text='Backups folder', command=self.open_backups).pack(side='right', padx=(0, 8))
@@ -1262,24 +1265,49 @@ class App(ttk.Frame):
         self.set_status('Every edit undone.')
 
     def save(self):
+        """Writes the slot's edited files. True when they are written (or there was nothing to write)."""
         s = self.slot
         if not s or not s.dirty:
-            return
+            return True
         files = [sf for sf in s.files.values() if sf.dirty]
         n = s.edited()
         if not messagebox.askokcancel(
                 'Save', f'Write {n} edited value{"s" if n != 1 else ""} to\n' + '\n'.join(str(sf.path) for sf in files)
                 + '?\n\nClose the game first: a running game overwrites the files when it saves.\nThe files are '
                 'copied into the backups folder before they are replaced.', parent=self):
-            return
+            return False
+        ok = True
         for sf in files:
             try:
                 sf.save(BACKUPS)
             except OSError as err:
                 messagebox.showerror('Save', f'{sf.path} could not be written:\n{err}', parent=self)
+                ok = False
                 break
         self.refresh_all()
-        self.set_status(f'Saved. The previous files are in {BACKUPS}')
+        if ok:
+            self.set_status(f'Saved. The previous files are in {BACKUPS}')
+        return ok
+
+    def save_and_play(self):
+        """Saves the edits (asking, as Save does), then starts the game."""
+        busy = nxsave.game_running()
+        if busy:
+            messagebox.showwarning('Save and play', f'{busy} is running already: close it first, so it does not '
+                                   'write over the save, then press Save and play again.', parent=self)
+            return
+        if self.save():
+            self.on_play()
+
+    def start_game(self):
+        """On its own (not in the toolbox): start Triforce.exe and close this window."""
+        exe = nxsave.game_dir() / 'Triforce.exe'
+        if not exe.is_file():
+            messagebox.showerror('Save and play', f'{exe} is not there.', parent=self)
+            return
+        import subprocess
+        subprocess.Popen([str(exe)], cwd=str(exe.parent))
+        self.winfo_toplevel().destroy()
 
     def open_backups(self):
         BACKUPS.mkdir(exist_ok=True)
