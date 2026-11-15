@@ -36,6 +36,33 @@ Needs Windows 10 or 11 and a game built with Triforce.
 
 
 -------------------------------------------------------------------------------
+ THE MODS THAT COME WITH IT
+-------------------------------------------------------------------------------
+
+The "mods" folder in this zip has five mods:
+
+  Young Link Mirror Shield     young Link holds the Mirror Shield in his hand
+  Young Link Hylian Shield     young Link holds the Hylian Shield in his hand,
+                               like the Deku Shield
+  Young Link All Items         young Link can pick the adult's items in the
+                               menu (big swords, Mirror Shield, hookshot...)
+  Biggoron One-Handed          the Biggoron Sword swung with one hand
+  Young Link Adult Motions     young Link gets the adult's motions for the big
+                               swords, hookshot, bow and hammer
+
+To install them:
+  1. Open the toolbox, go to the Mods tab, click "Add mods..." and answer Yes.
+  2. Press Save. (That also builds the "~Size Table" for YOUR game.)
+  3. Start the game (or press Save and play).
+
+They need the same game version they were made for: The Legend of Zelda:
+Ocarina of Time v131072, built with Triforce. On another version
+they may crash or not work. Turn them off in the Mods tab at any time.
+Tip: give young Link the Master Sword or Biggoron Sword in the save editor's
+Inventory tab to try them.
+
+
+-------------------------------------------------------------------------------
  THE TABS
 -------------------------------------------------------------------------------
 
@@ -45,6 +72,8 @@ Needs Windows 10 or 11 and a game built with Triforce.
      - Up / Down sets the order. When two mods replace the same file, the
        LOWER one in the list wins. Clashes are shown in red.
      - Save writes your choice. Save and play writes it and starts the game.
+     - Add mods... copies mods in: the ones that came with the toolbox, or
+       any folder you pick (a mod is a folder with a "romfs" folder inside).
      - Triforce needs one shared "size table" for mods that make game files
        bigger. The toolbox builds it for you (the "~Size Table" folder) every
        time you press Save. Don't delete or edit it by hand.
@@ -152,6 +181,7 @@ Needs Windows 10 or 11 and a game built with Triforce.
      size_table.py       builds the size table for mods
      theme.py            the colours
      jpeg_win.py         shows the slot picture (uses Windows' own decoder)
+  mods\                the five mods above (install with Mods tab > Add mods...)
   python\              the Python the toolbox runs with (no install needed)
 
   Made by the toolbox: app\backups (save backups), app\names-cache.json

@@ -134,6 +134,45 @@ def apply(mods):
     return [(m.name, new) for m, _t, new in temp]
 
 
+# the mods that come with the shared toolbox: Link Toolbox\mods, next to its app folder
+BUNDLED = Path(__file__).resolve().parent.parent / 'mods'
+
+
+def mod_folders(src):
+    """The mod folders in a folder (a folder with romfs in it is one mod itself)."""
+    src = Path(src)
+    if (src / 'romfs').is_dir():
+        return [src]
+    return sorted(p for p in src.iterdir() if p.is_dir() and (p / 'romfs').is_dir()) if src.is_dir() else []
+
+
+def install(folders, replace):
+    """Copies mod folders into the mods folder. replace(name) says whether to overwrite a mod already there (the same
+    name without its NN- / _ prefix). Returns (added, replaced, skipped) names."""
+    import shutil
+    MODS.mkdir(parents=True, exist_ok=True)
+    have = {plain(p.name).lower(): p for p in MODS.iterdir() if p.is_dir()}
+    added, replaced, skipped = [], [], []
+    for i, src in enumerate(folders):
+        name = plain(src.name)
+        if src.name.startswith('~'):              # the size table: Save builds it again from this game's own table
+            if not (MODS / src.name).exists():
+                shutil.copytree(src, MODS / src.name)
+            continue
+        old = have.get(name.lower())
+        if old is not None:
+            if Path(old).resolve() == src.resolve() or not replace(name):
+                skipped.append(name)
+                continue
+            shutil.rmtree(old)
+            replaced.append(name)
+        else:
+            added.append(name)
+        # (a mod added is on, after the others and in the order it came in: Save numbers it)
+        shutil.copytree(src, MODS / f'9{i:02d}-{name}')
+    return added, replaced, skipped
+
+
 class App(ttk.Frame):
     """The mod loader, as a frame: in a window of its own (main) or as a tab of the Link toolbox (toolbox.pyw).
     on_title(text): the title it would like its window to have; after_play(): what happens once the game is started
@@ -152,6 +191,7 @@ class App(ttk.Frame):
         self.where.pack(side='left')
         ttk.Button(top, text='Open folder', command=lambda: os.startfile(MODS)).pack(side='right')
         ttk.Button(top, text='Refresh', command=self.reload).pack(side='right', padx=(0, 6))
+        ttk.Button(top, text='Add mods...', command=self.add_mods).pack(side='right', padx=(0, 6))
 
         mid = ttk.Frame(self, padding=(10, 0))
         mid.pack(fill='both', expand=True)
@@ -276,6 +316,53 @@ class App(ttk.Frame):
         self.mods[i], self.mods[j] = self.mods[j], self.mods[i]
         self.dirty = True
         self.fill(j)
+
+    # -- adding mods
+    def add_mods(self):
+        """Copies mods into the mods folder: the ones that came with the toolbox, or any folder picked."""
+        from tkinter import filedialog
+        busy = running()
+        if busy:
+            messagebox.showwarning('Add mods', f'Close {", ".join(busy)} first.', parent=self)
+            return
+        if self.dirty and not messagebox.askyesno('Add mods', 'Forget the changes you have not saved?', parent=self):
+            return
+        bundled = [p for p in mod_folders(BUNDLED) if not p.name.startswith('~')]
+        src = None
+        if bundled:
+            answer = messagebox.askyesnocancel(
+                'Add mods', f'Add the {len(bundled)} mods that came with the toolbox?\n\n' +
+                '\n'.join('  ' + plain(p.name) for p in bundled) + '\n\nYes: add these.   No: pick another folder.',
+                parent=self)
+            if answer is None:
+                return
+            src = BUNDLED if answer else None
+        if src is None:
+            path = filedialog.askdirectory(parent=self, mustexist=True,
+                                           title='A mod folder (with romfs inside), or a folder of mods')
+            if not path:
+                return
+            src = Path(path)
+        folders = mod_folders(src)
+        if not folders:
+            messagebox.showinfo('Add mods', f'{src}\n\nhas no mods in it: a mod is a folder with a "romfs" folder '
+                                'inside.', parent=self)
+            return
+        try:
+            added, replaced, skipped = install(folders, lambda name: messagebox.askyesno(
+                'Add mods', f'"{name}" is there already. Replace it with this copy?', parent=self))
+        except OSError as err:
+            messagebox.showerror('Add mods', f'The mods could not be copied:\n{err}', parent=self)
+            self.dirty = False
+            self.reload()
+            return
+        self.mods = scan()
+        self.dirty = bool(added or replaced)
+        self.fill()
+        if added or replaced:
+            self.status['text'] += f'   -   added {len(added) + len(replaced)}: press Save to use them'
+        else:
+            self.status['text'] += '   -   nothing new to add'
 
     # -- saving and playing
     def save(self):

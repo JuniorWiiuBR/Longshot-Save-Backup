@@ -12,12 +12,27 @@ Get **`Link Toolbox.zip`** from the [Releases](../../releases) page, unzip it an
 
 There's nothing to install: the zip brings its own Python. You need Windows 10 or 11 and a game built with Triforce. The toolbox finds the game where Triforce installed it, or asks you once for the folder that has `Triforce.exe`.
 
+## Mods included
+
+The zip comes with five mods in its `mods` folder. Install them from the **Mods** tab: click **Add mods...**, answer Yes, then press **Save**.
+
+| Mod | What it does |
+|---|---|
+| Young Link Mirror Shield | Young Link holds the Mirror Shield in his hand |
+| Young Link Hylian Shield | Young Link holds the Hylian Shield in his hand, like the Deku Shield |
+| Young Link All Items | Young Link can pick the adult's items in the menu (big swords, Mirror Shield, hookshot...) |
+| Biggoron One-Handed | The Biggoron Sword swung with one hand |
+| Young Link Adult Motions | Young Link gets the adult's motions for the big swords, hookshot, bow and hammer |
+
+They're made for **Ocarina of Time v131072** built with Triforce, and may not work on another version. Pressing Save also builds the size table (`~Size Table`) from your own game.
+
 ## Features
 
 ### Mods
 - Lists every mod in the game's `mods` folder. Tick a mod to turn it on or off.
 - Set the order: when two mods replace the same file, the lower one wins, and clashes are shown in red.
 - **Save and play** starts the game with your choice.
+- **Add mods...** copies mods in: the ones that come with the toolbox, or any folder you pick.
 - Builds the shared size table Triforce needs for mods that make game files bigger (the `~Size Table` folder), every time you press Save.
 - Won't change mods while the game is running.
 
@@ -107,4 +122,4 @@ The names of the save's entries aren't stored in this repository. The toolbox re
 
 Link's Toolbox by **Cum_Dumpster**, released under the [MIT License](LICENSE).
 
-This is a fan-made tool, not affiliated with or endorsed by Nintendo. It contains no game files: you need your own copy of the game.
+This is a fan-made tool, not affiliated with or endorsed by Nintendo. The source code in this repository contains no game files. The included mods are changed copies of a few game files, and are only in the release download. You need your own copy of the game.

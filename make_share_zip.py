@@ -4,6 +4,8 @@
         Link Toolbox.bat     double-click to open
         README.txt           (save-editor\\README.txt: edit that one)
         app\\                the toolbox's scripts (no backups, settings or names cache: those are made there)
+        mods\\               the mods that are on in game\\mods (the Mods tab's "Add mods..." installs them);
+                             --no-mods leaves them out
         python\\              the Python NX2navi ships, without its site-packages (the toolbox does not use them)
 
 Run:  python\\python.exe save-editor\\make_share_zip.py                  (inside the NX2navi folder)
@@ -53,6 +55,15 @@ Needs Windows 10 or 11.
 '''
 
 
+def share_mods():
+    """The mods that are on in the game's mods folder (not starting with _ or -), and the size table."""
+    sys.path.insert(0, str(HERE))
+    import nxsave
+    mods = nxsave.game_dir() / 'mods'
+    return sorted(p for p in mods.iterdir() if p.is_dir() and not p.name.startswith(('_', '-'))
+                  and (p / 'romfs').is_dir()) if mods.is_dir() else []
+
+
 def main():
     global PYTHON
     if '--python' in sys.argv:       # another Python 3.14 folder (with tkinter) to put in the zip
@@ -70,6 +81,14 @@ def main():
             z.write(HERE / 'LICENSE', root + 'LICENSE.txt')
         for name in APP:
             z.write(HERE / name, root + 'app/' + name)
+        if '--no-mods' not in sys.argv:
+            shared = share_mods()
+            for mod in shared:
+                for p in sorted(mod.rglob('*')):
+                    if p.is_file():
+                        z.write(p, root + 'mods/' + mod.name + '/' + p.relative_to(mod).as_posix(),
+                                compress_type=zipfile.ZIP_STORED if p.suffix == '.zs' else zipfile.ZIP_DEFLATED)
+            print('mods:', ', '.join(m.name for m in shared) or 'none')
         n = 0
         for p in sorted(PYTHON.rglob('*')):
             rel = p.relative_to(PYTHON)
