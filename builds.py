@@ -102,7 +102,11 @@ def check(parent):
     """At start: links new builds to the shared mods folder (when it is on), and offers (or, when set to, does) the
     move to a newer build of the app in use. True when the toolbox switched."""
     if nxsave.shared_folder():
-        ensure_links()
+        if parent is not None:
+            import busy
+            busy.run(parent, 'Linking new builds to the shared mods folder...', ensure_links)
+        else:
+            ensure_links()
     found = newer_build()
     if not found:
         return False
@@ -122,12 +126,20 @@ def check(parent):
                                    parent=parent):
             nxsave.save_settings({**nxsave.load_settings(), 'build_skipped': str(newest)})
             return False
-    copied = carry(current, newest) if mods else []
-    switch_to(newest, app)
-    try:
-        rebuild_size_table(newest)
-    except Exception:
-        pass                              # (the Mods tab's Save builds it too)
+    def work():
+        got = carry(current, newest) if mods else []
+        switch_to(newest, app)
+        try:
+            rebuild_size_table(newest)
+        except Exception:
+            pass                          # (the Mods tab's Save builds it too)
+        return got
+    if parent is not None:
+        import busy
+        copied = busy.run(parent, f'Bringing your mods to {app} {version or newest.name} and building its size '
+                          'table...', work)
+    else:
+        copied = work()
     if not auto:
         messagebox.showinfo(TITLE, f'Now using {app} {version or newest.name}.' +
                             (f'\n\nCopied {len(copied)} mod{"s" if len(copied) != 1 else ""}: ' +

@@ -383,9 +383,20 @@ class App(ttk.Frame):
             messagebox.showinfo('Add mods', f'{src}\n\nhas no mods in it: a mod is a folder with a "romfs" folder '
                                 'inside.', parent=self)
             return
+        # (the questions first: the copying then runs in the background, with the Working... window)
+        have = {plain(p.name).lower(): p for p in MODS.iterdir() if p.is_dir()} if MODS.is_dir() else {}
+        replace = set()
+        for src in folders:
+            name = plain(src.name)
+            old = have.get(name.lower())
+            if src.name.startswith('~') or old is None or Path(old).resolve() == src.resolve():
+                continue
+            if messagebox.askyesno('Add mods', f'"{name}" is there already. Replace it with this copy?', parent=self):
+                replace.add(name)
         try:
-            added, replaced, skipped = install(folders, lambda name: messagebox.askyesno(
-                'Add mods', f'"{name}" is there already. Replace it with this copy?', parent=self))
+            import busy
+            added, replaced, skipped = busy.run(self, f'Copying {len(folders)} mod{"s" if len(folders) != 1 else ""} '
+                                                f'into\n{MODS}...', lambda: install(folders, lambda n: n in replace))
         except OSError as err:
             messagebox.showerror('Add mods', f'The mods could not be copied:\n{err}', parent=self)
             self.dirty = False
@@ -406,7 +417,10 @@ class App(ttk.Frame):
             messagebox.showwarning('Mod loader', f'Close {", ".join(busy)} first.', parent=self)
             return False
         try:
-            done = apply(self.mods)
+            import busy
+            mods = list(self.mods)
+            done = busy.run(self, 'Saving the mods and building the size table from the game files...',
+                            lambda: apply(mods))
         except (OSError, ValueError) as err:
             messagebox.showerror('Mod loader', f'The folders could not be renamed:\n{err}', parent=self)
             self.dirty = False

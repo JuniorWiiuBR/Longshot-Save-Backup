@@ -592,7 +592,9 @@ class Toolbox:
         if any(builds.same(folder, Path(g) / 'mods') or builds.same(folder, g) for g in games):
             messagebox.showerror('Shared mods folder', 'Pick a folder outside the game folders.', parent=self.root)
             return
-        linked, failed = builds.start_sharing(folder)
+        import busy
+        linked, failed = busy.run(self.root, f'Setting up the shared mods folder:\nmoving the mods into {folder} and '
+                                  'linking every build to it...', lambda: builds.start_sharing(folder))
         self.after_shared_change()
         self.fill_found()
         msg = f'Shared mods folder on: {folder}\n\n{len(linked)} build{"s" if len(linked) != 1 else ""} now use it.'
@@ -615,7 +617,10 @@ class Toolbox:
             'folder?\nYes: copy them.   No: start them empty.', parent=self.root)
         if answer is None:
             return
-        done = builds.stop_sharing(copy_back=answer)
+        import busy
+        done = busy.run(self.root, 'Stopping the shared mods folder:\nremoving the links' +
+                        (' and copying the mods back into every build...' if answer else '...'),
+                        lambda: builds.stop_sharing(copy_back=answer))
         self.after_shared_change()
         self.folders_status['text'] = (f'Shared mods folder off: {len(done)} build{"s" if len(done) != 1 else ""} use '
                                        'their own mods folder again.')

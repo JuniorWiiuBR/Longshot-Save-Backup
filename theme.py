@@ -166,6 +166,8 @@ def apply(root, reload=True):
     s.map('TRadiobutton', background=[('active', BG)], indicatorbackground=[('selected', FIELD), ('active', HOVER)])
     s.configure('Horizontal.TScale', background=GOLD, troughcolor=FIELD, bordercolor=BORDER,
                 lightcolor=GOLD, darkcolor=GOLD)
+    s.configure('Horizontal.TProgressbar', background=GOLD, troughcolor=FIELD, bordercolor=BORDER,
+                lightcolor=GOLD, darkcolor=GOLD, thickness=10)
     for w in ('TEntry', 'TCombobox', 'TSpinbox'):
         s.configure(w, fieldbackground=FIELD, foreground=TEXT, background=PANEL, bordercolor=BORDER,
                     arrowcolor=GOLD, insertcolor=TEXT, lightcolor=FIELD, darkcolor=FIELD, padding=(4, 2))

@@ -1328,14 +1328,18 @@ class App(ttk.Frame):
                 + '?\n\nClose the game first: a running game overwrites the files when it saves.\nThe files are '
                 'copied into the backups folder before they are replaced.', parent=self):
             return False
-        ok = True
-        for sf in files:
-            try:
-                sf.save(BACKUPS)
-            except OSError as err:
-                messagebox.showerror('Save', f'{sf.path} could not be written:\n{err}', parent=self)
-                ok = False
-                break
+        def write():          # (in the background, with the Working... window: files only)
+            for sf in files:
+                try:
+                    sf.save(BACKUPS)
+                except OSError as err:
+                    return f'{sf.path} could not be written:\n{err}'
+            return ''
+        import busy
+        problem = busy.run(self, f'Saving {s.label}...', write)
+        ok = not problem
+        if problem:
+            messagebox.showerror('Save', problem, parent=self)
         self.refresh_all()
         if ok:
             self.set_status(f'Saved. The previous files are in {BACKUPS}')
@@ -1408,29 +1412,34 @@ class App(ttk.Frame):
         stamp = time.strftime('%Y-%m-%d %H%M%S')
         files = [(name, s.files[kind]) for kind, name in (('progress', 'progress.sav'), ('caption', 'caption.sav'))
                  if kind in s.files]
-        done, failed, saved_here = [], [], False
-        for app, acct in targets:
-            dest = Path(acct) / f'slot_{n:02d}'
-            try:
-                if os.path.normcase(str(dest)) == os.path.normcase(str(here)):
-                    for _name, sf in files:
-                        if sf.dirty:
-                            sf.save(BACKUPS)
-                    saved_here = True
-                else:
-                    dest.mkdir(parents=True, exist_ok=True)
-                    keep = BACKUPS / stamp / f'{app} {Path(acct).name[:8]}' / dest.name
-                    for name, sf in files:
-                        old = dest / name
-                        if old.is_file():
-                            keep.mkdir(parents=True, exist_ok=True)
-                            shutil.copy2(old, keep / name)
-                        tmp = dest / (name + '.editing')
-                        tmp.write_bytes(sf.buf)
-                        tmp.replace(old)
-                done.append(f'{app}: {dest}')
-            except OSError as err:
-                failed.append(f'{app}: {dest}\n   {err}')
+        done, failed, state = [], [], {'here': False}
+
+        def write():          # (in the background, with the Working... window: files only)
+            for app, acct in targets:
+                dest = Path(acct) / f'slot_{n:02d}'
+                try:
+                    if os.path.normcase(str(dest)) == os.path.normcase(str(here)):
+                        for _name, sf in files:
+                            if sf.dirty:
+                                sf.save(BACKUPS)
+                        state['here'] = True
+                    else:
+                        dest.mkdir(parents=True, exist_ok=True)
+                        keep = BACKUPS / stamp / f'{app} {Path(acct).name[:8]}' / dest.name
+                        for name, sf in files:
+                            old = dest / name
+                            if old.is_file():
+                                keep.mkdir(parents=True, exist_ok=True)
+                                shutil.copy2(old, keep / name)
+                            tmp = dest / (name + '.editing')
+                            tmp.write_bytes(sf.buf)
+                            tmp.replace(old)
+                    done.append(f'{app}: {dest}')
+                except OSError as err:
+                    failed.append(f'{app}: {dest}\n   {err}')
+        import busy
+        busy.run(self, f'Writing {s.label} to {len(targets)} save location{"s" if len(targets) != 1 else ""}...', write)
+        saved_here = state['here']
         self.refresh_all()
         msg = f'{s.label} written to slot {n + 1} in {len(done)} place{"s" if len(done) != 1 else ""}:\n\n' + \
               '\n'.join(done)
