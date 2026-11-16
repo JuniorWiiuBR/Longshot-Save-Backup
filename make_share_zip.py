@@ -63,16 +63,23 @@ Needs Windows 10 or 11.
 '''
 
 
+# mods shipped switched off (their name keeps its leading _): Add mods installs them off, the player turns one on
+SHIP_OFF = ('Young Link Two-Handed Swords',)     # (replaces the same file as Biggoron One-Handed: one or the other)
+
+
 def share_mods():
-    """The mods that are on in the game's mods folder (not starting with _ or -), and the size table."""
+    """The mods that are on in the game's mods folder (not starting with _ or -), the size table, and the SHIP_OFF
+    mods (switched off)."""
     sys.path.insert(0, str(HERE))
     import nxsave
     # (from the Triforce game when there is one, whatever game the toolbox is set to now)
     triforce = next((p for app, p in nxsave.all_game_dirs() if app == 'Triforce'), None)
     mods = (triforce or nxsave.game_dir()) / 'mods'
     print('mods from:', mods)
-    return sorted(p for p in mods.iterdir() if p.is_dir() and not p.name.startswith(('_', '-'))
-                  and (p / 'romfs').is_dir()) if mods.is_dir() else []
+    import re
+    plain = lambda name: re.sub(r'^(?:[-_]+)?(?:\d+-)?', '', name)
+    return sorted(p for p in mods.iterdir() if p.is_dir() and (p / 'romfs').is_dir()
+                  and (not p.name.startswith(('_', '-')) or plain(p.name) in SHIP_OFF)) if mods.is_dir() else []
 
 
 LINUX_OUT = HERE / 'share' / 'Link Toolbox (Linux).tar.gz'

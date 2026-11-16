@@ -33,7 +33,7 @@ The first time, it also makes a **Link Toolbox** shortcut with the toolbox's ico
 
 ## Mods included
 
-The zip comes with five mods in its `mods` folder. Install them from the **Mods** tab: click **Add mods...**, answer Yes, then press **Save**.
+The zip comes with six mods in its `mods` folder. Install them from the **Mods** tab: click **Add mods...**, answer Yes, then press **Save**.
 
 | Mod | What it does |
 |---|---|
@@ -42,6 +42,9 @@ The zip comes with five mods in its `mods` folder. Install them from the **Mods*
 | Young Link All Items | Young Link can pick the adult's items in the menu (big swords, Mirror Shield, hookshot...) |
 | Biggoron One-Handed | The Biggoron Sword swung with one hand |
 | Young Link Adult Motions | Young Link gets the adult's motions for the big swords, hookshot, bow and hammer |
+| Young Link Two-Handed Swords *(comes switched off)* | The Biggoron Sword swung with both hands, as the adult does. Needs Young Link Adult Motions. |
+
+**Biggoron One-Handed** and **Young Link Two-Handed Swords** change the same file, so only one can be on. One-Handed comes switched on. To swing it with two hands, switch One-Handed off and Two-Handed on in the Mods tab, then press **Save**.
 
 They're made for **Ocarina of Time v131072** built with Triforce, and may not work on another version. Pressing Save also builds the size table (`~Size Table`) from your own game.
 

@@ -109,7 +109,7 @@ finds Longshot by itself.)
  THE MODS THAT COME WITH IT
 -------------------------------------------------------------------------------
 
-The "mods" folder in this zip has five mods:
+The "mods" folder in this zip has six mods:
 
   Young Link Mirror Shield     young Link holds the Mirror Shield in his hand
   Young Link Hylian Shield     young Link holds the Hylian Shield in his hand,
@@ -119,6 +119,12 @@ The "mods" folder in this zip has five mods:
   Biggoron One-Handed          the Biggoron Sword swung with one hand
   Young Link Adult Motions     young Link gets the adult's motions for the big
                                swords, hookshot, bow and hammer
+  Young Link Two-Handed Swords the Biggoron Sword swung with both hands
+  (comes switched off)         (needs Young Link Adult Motions)
+
+Biggoron One-Handed and Young Link Two-Handed Swords change the same file,
+so only one can be on. One-Handed comes on: for two hands, switch it off
+and Two-Handed on in the Mods tab, then press Save.
 
 To install them:
   1. Open the toolbox, go to the Mods tab, click "Add mods..." and answer Yes.

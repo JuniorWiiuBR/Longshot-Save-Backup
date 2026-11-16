@@ -164,8 +164,10 @@ def install(folders, replace):
             replaced.append(name)
         else:
             added.append(name)
-        # (a mod added is on, after the others and in the order it came in: Save numbers it)
-        shutil.copytree(src, MODS / f'9{i:02d}-{name}')
+        # (a mod added is on, after the others and in the order it came in: Save numbers it; one that came switched
+        #  off, its name starting with _ or -, stays off)
+        off = src.name.startswith(('_', '-'))
+        shutil.copytree(src, MODS / (f'_{name}' if off else f'9{i:02d}-{name}'))
     return added, replaced, skipped
 
 
@@ -367,7 +369,8 @@ class App(ttk.Frame):
         if bundled:
             answer = messagebox.askyesnocancel(
                 'Add mods', f'Add the {len(bundled)} mods that came with the toolbox?\n\n' +
-                '\n'.join('  ' + plain(p.name) for p in bundled) + '\n\nYes: add these.   No: pick another folder.',
+                '\n'.join('  ' + plain(p.name) + ('   (comes switched off)' if p.name.startswith(('_', '-')) else '')
+                          for p in bundled) + '\n\nYes: add these.   No: pick another folder.',
                 parent=self)
             if answer is None:
                 return
