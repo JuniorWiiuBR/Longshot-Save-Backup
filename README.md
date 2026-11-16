@@ -10,7 +10,13 @@ One small Windows app to switch your mods on and off before you play, and to edi
 
 ## Download
 
-Get **`Link Toolbox.zip`** from the [Releases](../../releases) page, then use it either way:
+**Quickest (Windows):** paste this into PowerShell. It downloads the newest version and opens its installer (click **Install**, or **Upgrade** if it's installed already):
+
+```powershell
+irm https://raw.githubusercontent.com/losava/Links-Toolbox/main/install.ps1 | iex
+```
+
+Or get **`Link Toolbox.zip`** from the [Releases](../../releases) page, then use it either way:
 
 - **Portable:** unzip it anywhere (even a USB stick) and double-click **`Link Toolbox.bat`**. Nothing is installed: to remove it, delete the folder.
 - **Installed app:** double-click **`Install Link Toolbox.bat`** in the unzipped folder (details below).
@@ -148,6 +154,7 @@ It writes `share\Link Toolbox.zip`. Upload that to a GitHub release.
 | `icons.py` | Draws the icons, makes `icon.ico` from them or from a slot picture, and makes the shortcuts |
 | `updater.py` | The Updates tab: checks GitHub's newest release, downloads it and puts it in place |
 | `install.py` | Installs for this Windows user (shortcuts, Settings → Apps entry), and uninstalls |
+| `install.ps1` | The one-line install: downloads the newest release and opens its installer |
 | `make_share_zip.py` | Builds `Link Toolbox.zip` (and, with `--linux`, the Linux `.tar.gz`) |
 
 The names of the save's entries aren't stored in this repository. The toolbox reads them from your own game files the first time and keeps them in `names-cache-<number>.json` (one for each game folder, so Triforce and Longshot each have their own).
