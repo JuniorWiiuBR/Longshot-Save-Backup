@@ -6,12 +6,12 @@
         app\\                the toolbox's scripts (no backups, settings or names cache: those are made there)
         mods\\               the mods that are on in game\\mods (the Mods tab's "Add mods..." installs them);
                              --no-mods leaves them out
-        python\\              the Python NX2navi ships, without its site-packages (the toolbox does not use them)
+        python\\              the Python beside save-editor, without its site-packages (the toolbox does not use them)
 
 With --linux it makes share\\Link Toolbox (Linux).tar.gz instead: the same scripts and mods, Link Toolbox.sh to start
 it (with the system's Python 3.14+ and Tk), and no Python inside.
 
-Run:  python\\python.exe save-editor\\make_share_zip.py                  (inside the NX2navi folder)
+Run:  python\\python.exe save-editor\\make_share_zip.py                  (inside the Links-Toolbox folder)
       python make_share_zip.py --python "C:\\path\\to\\python314"       (anywhere else)
 """
 import sys

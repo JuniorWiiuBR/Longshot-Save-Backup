@@ -6,7 +6,7 @@
     All entries  every entry of the slot's files by name, any value changed in place
 
 Hearts, magic and rupees are written to the slot's progress.sav and to its caption.sav (the file-select screen).
-Run it with the Python that NX2navi ships:  python\\pythonw.exe save-editor\\save_editor.pyw   (or Save Editor.bat)
+Run it with the Python beside this folder:  python\\pythonw.exe save-editor\\save_editor.pyw   (or Save Editor.bat)
 Close the game before saving. Every save first copies the files on disk into save-editor\\backups.
 """
 import os
@@ -18,7 +18,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, ttk
 
-# the Python that NX2navi ships does not look for modules next to the script
+# this Python (an embedded one) does not look for modules next to the script
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import nxsave  # noqa: E402
 import oot_catalog as cat  # noqa: E402

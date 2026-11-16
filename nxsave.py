@@ -334,7 +334,7 @@ def _game_dir_candidates():
         yield json.loads((ROOT / 'data' / 'launcher.json').read_text(encoding='utf-8')).get('game_dir')
     except (OSError, ValueError):
         pass
-    yield ROOT / 'game'                                     # the toolbox inside the NX2navi folder
+    yield ROOT / 'game'                                     # (the folder above the toolbox's: NX2navi's game when it ran from there)
     local = os.environ.get('LOCALAPPDATA', '')
     if local:                                               # (Windows)
         try:                                                # Triforce's installer logs where it put the game
