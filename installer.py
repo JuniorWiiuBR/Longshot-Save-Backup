@@ -128,12 +128,25 @@ def kill_app():
 
 
 def installed_version():
+    """Versão instalada, só se ela existir de verdade: a chave do registro E o programa no disco.
+    Registro sobrando (instalação apagada à mão) é ignorado e limpo."""
     try:
         import winreg
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, UNINSTALL_KEY) as k:
-            return winreg.QueryValueEx(k, "DisplayVersion")[0]
+            version = winreg.QueryValueEx(k, "DisplayVersion")[0]
+            try:
+                where = winreg.QueryValueEx(k, "InstallLocation")[0]
+            except OSError:
+                where = INSTALL_DIR
     except Exception:
         return None
+    if where and os.path.isfile(os.path.join(where, APP_EXE)):
+        return version
+    try:  # registro órfão: o programa não está mais lá
+        winreg.DeleteKey(winreg.HKEY_CURRENT_USER, UNINSTALL_KEY)
+    except OSError:
+        pass
+    return None
 
 
 def system_lang():
@@ -156,7 +169,7 @@ def copy_with_retry(src, dst, tries=6):
     raise last
 
 
-def do_install(desktop, autostart, report):
+def do_install(desktop, autostart, report, fresh=False):
     import winreg
     exe_dst = os.path.join(INSTALL_DIR, APP_EXE)
     ico_dst = os.path.join(INSTALL_DIR, "icone.ico")
@@ -165,6 +178,8 @@ def do_install(desktop, autostart, report):
 
     report(5, "step_close")
     kill_app()
+    if fresh:  # instalação nova: começa limpa, sem pastas/configurações de uma execução anterior neste PC
+        shutil.rmtree(CFG_DIR, ignore_errors=True)
 
     report(25, "step_files")
     os.makedirs(INSTALL_DIR, exist_ok=True)
@@ -261,7 +276,7 @@ class Setup:
         self.v_desktop = tk.BooleanVar(value=True)
         self.v_autostart = tk.BooleanVar(value=False)
         self.v_open = tk.BooleanVar(value=True)
-        self.v_cfg = tk.BooleanVar(value=False)
+        self.v_cfg = tk.BooleanVar(value=True)
         self.old_version = installed_version()
         self.progress = 0
         self.progress_key = "step_close"
@@ -402,13 +417,14 @@ class Setup:
         self.progress, self.progress_key = 0, "step_close"
         self.render()
         desktop, autostart = self.v_desktop.get(), self.v_autostart.get()
+        fresh = not self.old_version
 
         def report(pct, key):
             self.q.put(("progress", pct, key))
 
         def worker():
             try:
-                do_install(desktop, autostart, report)
+                do_install(desktop, autostart, report, fresh)
                 self.q.put(("done",))
             except Exception as e:
                 self.q.put(("error", str(e)))
