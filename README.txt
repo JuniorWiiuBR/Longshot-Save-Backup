@@ -78,6 +78,16 @@ Longshot is another PC port of the same game, by MagicBeanDev
 rules as Triforce, and its saves look the same, so the Mods tab, the included
 mods and the save editor work with it too.
 
+New builds: Longshot builds every version into a new folder, whose mods
+folder starts empty. When the toolbox finds a newer build than the one you
+use, it asks to copy your mods across and switch to it (the old build stays
+as it was). Folders tab > "Bring my mods to new Longshot builds without
+asking" does it automatically.
+
+One shared mods folder (optional): Folders tab > "Use one shared mods
+folder..." makes one folder every Longshot build uses (it sets Longshot's
+HOS_MODS setting for your Windows user). "Stop sharing" undoes it.
+
 Longshot is still in development, so this support is early: a change in
 Longshot may need a toolbox update.
 
@@ -262,6 +272,7 @@ Inventory tab to try them.
      icons.py            the icon and the shortcuts
      updater.py          the Updates tab
      install.py          installing and uninstalling
+     builds.py           new Longshot builds: mods copied across
      icon.ico, icon.png  the icon in use
   mods\                the five mods above (install with Mods tab > Add mods...)
   python\              the Python the toolbox runs with (no install needed)

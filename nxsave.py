@@ -356,6 +356,91 @@ def _game_dir_candidates():
     yield from remembered('games')     # game folders typed in the Folders tab and kept
 
 
+# --------------------------------------------------------------------------- Longshot builds, and one shared mods folder
+# Longshot's launcher builds every version into a folder of its own (Games\Longshot\rc, ...): a new build starts with
+# an empty mods folder. The toolbox spots new builds (and brings the mods along), or points Longshot at one shared mods
+# folder for every build (its HOS_MODS setting, a Windows user environment variable).
+
+def longshot_version(build):
+    """'v3.0.0-rc.4' from a build's longshot_version.txt, '' when it has none."""
+    try:
+        for line in (Path(build) / 'longshot_version.txt').read_text(encoding='utf-8', errors='replace').splitlines():
+            if line.startswith('version='):
+                return line.split('=', 1)[1].strip()
+    except OSError:
+        pass
+    return ''
+
+
+def version_key(version, build=None):
+    """Sortable: v3.0.0 > v3.0.0-rc.5 > v3.0.0-rc.4; no version: the build's date."""
+    m = re.match(r'v?(\d+)\.(\d+)\.(\d+)(?:[-.]?rc\.?(\d+))?', version or '')
+    if not m:
+        exe = program(build, 'longshot.exe') if build else None
+        return (0, 0, 0, 0, 0, exe.stat().st_mtime if exe else 0)
+    a, b, c, rc = m.groups()
+    return (int(a), int(b), int(c), 0 if rc else 1, int(rc or 0), 0)
+
+
+def longshot_builds():
+    """[(version, folder)] of every Longshot build found, the newest first."""
+    out, seen = [], set()
+    for d in _game_dir_candidates():
+        if not d or not program(d, 'longshot.exe'):
+            continue
+        key = os.path.normcase(str(Path(d).resolve()))
+        if key not in seen:
+            seen.add(key)
+            out.append((longshot_version(d), Path(d)))
+    return sorted(out, key=lambda vb: version_key(vb[0], vb[1]), reverse=True)
+
+
+def shared_mods():
+    """The shared mods folder every Longshot build uses (its HOS_MODS setting), None when it isn't set."""
+    value = ''
+    if WINDOWS:
+        try:
+            import winreg
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Environment') as k:
+                value = winreg.QueryValueEx(k, 'HOS_MODS')[0]
+        except OSError:
+            value = ''
+    value = value or os.environ.get('HOS_MODS', '')
+    return Path(os.path.expandvars(value)) if value else None
+
+
+def set_shared_mods(path):
+    """Sets (path) or removes (None) Longshot's HOS_MODS for this Windows user, and tells Windows, so programs started
+    from now on (Longshot's launcher too) see it. This toolbox's own Save and play gets it straight away."""
+    if not WINDOWS:
+        raise OSError('the shared mods folder is set up on Windows only (on Linux, set HOS_MODS in your profile)')
+    import ctypes
+    import winreg
+    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'Environment', 0, winreg.KEY_SET_VALUE) as k:
+        if path:
+            winreg.SetValueEx(k, 'HOS_MODS', 0, winreg.REG_SZ, str(path))
+        else:
+            try:
+                winreg.DeleteValue(k, 'HOS_MODS')
+            except OSError:
+                pass
+    if path:
+        os.environ['HOS_MODS'] = str(path)
+    else:
+        os.environ.pop('HOS_MODS', None)
+    try:      # (WM_SETTINGCHANGE "Environment" to every window: new programs get the new value)
+        ctypes.windll.user32.SendMessageTimeoutW(0xFFFF, 0x1A, 0, 'Environment', 2, 3000, ctypes.byref(ctypes.c_size_t()))
+    except (AttributeError, OSError):
+        pass
+
+
+def mods_dir_for(game, app=None):
+    """A game's mods folder: Longshot's shared one when it is set, else the mods folder in the game folder."""
+    app = app or app_of(game)
+    shared = shared_mods() if app == 'Longshot' else None
+    return shared if shared else Path(game) / 'mods'
+
+
 def remembered(kind):
     """The folders the player typed in the Folders tab and chose to keep: kind 'games' or 'saves'."""
     return [p for p in load_settings().get(f'remembered_{kind}', []) if isinstance(p, str)]
@@ -494,7 +579,7 @@ def all_mod_locations():
     for app, game in all_game_dirs():
         exe = dict(APPS).get(app)
         label = f'{app} ({Path(game).name})' if is_remembered('games', game) else app
-        add(label, Path(game) / 'mods', program(game, exe) if exe else None)
+        add(label, mods_dir_for(game, app), program(game, exe) if exe else None)
     for label, d in [('Folders tab', load_settings().get('mods_dir'))] + [('Kept', p) for p in remembered('mods')]:
         if d and Path(d).is_dir():
             add(label, d, game_exe(Path(d).parent) if is_game_dir(Path(d).parent) else None)
@@ -573,9 +658,7 @@ class Romfs:
                     rel = p.relative_to(folder).as_posix()
                     self.files.append({'path': rel, 'size': p.stat().st_size, 'offset': None})
             self.files.sort(key=lambda f: f['path'])
-            marker = Path(game) / '.triforce_romfs'
-            self.sha = 'loose:' + (marker.read_text(encoding='utf-8', errors='replace').strip() if marker.is_file()
-                                   else str(len(self.files)))
+            self.sha = 'loose:' + (romfs_marker(game) or str(len(self.files)))
         else:
             raise FileNotFoundError(f'no game files in {folder}')
         self.by_path = {f['path']: f for f in self.files}
@@ -805,14 +888,16 @@ def load_names(game=None, progress=lambda text: None, rebuild=False):
         else:
             if not (game / 'romfs').is_dir():
                 return Names()
-            # (the marker each builder leaves next to the game files it wrote: Triforce's, or Longshot's)
-            marker = next((game / m for m in ('.triforce_romfs', '.longshot_romfs') if (game / m).is_file()), None)
-            sha = 'loose:' + (marker.read_text(encoding='utf-8', errors='replace').strip() if marker else '')
+            text = romfs_marker(game)
+            sha = 'loose:' + (text or str(sum(len(f) for _r, _d, f in os.walk(game / 'romfs'))))
     except (OSError, ValueError):
         return Names()                     # no game files: the editor still works, with hashes for names
     mine = cache_file(game)
     if not rebuild:
-        for f in (mine, CACHE):            # (CACHE: the one file older versions kept, for whichever game)
+        # this folder's own list, the one file older versions kept, then any other folder's list made from the same
+        # game files (a new Longshot build of the same game: no 4-minute re-read)
+        others = [f for f in sorted(HERE.glob('names-cache-*.json')) if f != mine]
+        for f in [mine, CACHE] + others:
             try:
                 raw = json.loads(f.read_text(encoding='utf-8'))
                 if raw.get('version') == CACHE_VERSION and raw.get('romfs') == sha:
@@ -825,6 +910,20 @@ def load_names(game=None, progress=lambda text: None, rebuild=False):
     except OSError:
         pass
     return Names(raw)
+
+
+def romfs_marker(game):
+    """The note the builder left next to the game files it unpacked (Triforce's .triforce_romfs, Longshot's
+    .longshot_romfs: both name the game file they came from), '' when there is none. The same game file gives the same
+    note, so Triforce, Longshot and every new build of it share one names list."""
+    for m in ('.triforce_romfs', '.longshot_romfs'):
+        try:
+            text = (Path(game) / m).read_text(encoding='utf-8', errors='replace').strip()
+            if text:
+                return text
+        except OSError:
+            pass
+    return ''
 
 
 def cache_file(game):

@@ -23,7 +23,7 @@ import nxsave  # noqa: E402
 import theme  # noqa: E402
 
 GAME = nxsave.game_dir()
-DEFAULT_MODS = GAME / 'mods'
+DEFAULT_MODS = nxsave.mods_dir_for(GAME)     # (Longshot with a shared mods folder: that one)
 MODS = DEFAULT_MODS
 GAME_EXE = nxsave.game_exe(GAME) or GAME / 'Triforce.exe'
 
