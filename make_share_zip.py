@@ -22,7 +22,11 @@ HERE = Path(__file__).resolve().parent
 PYTHON = HERE.parent / 'python'
 OUT = HERE / 'share' / 'Link Toolbox.zip'
 APP = ('toolbox.pyw', 'mod_loader.pyw', 'save_editor.pyw', 'nxsave.py', 'oot_catalog.py', 'jpeg_win.py',
-       'size_table.py', 'theme.py', 'icons.py')
+       'size_table.py', 'theme.py', 'icons.py', 'updater.py', 'install.py')
+INSTALL_BAT = '''@echo off
+rem Installs Link's Toolbox for this user (Start menu, Desktop, Windows Settings > Apps), or upgrades the installed one.
+start "" "%~dp0python\\pythonw.exe" "%~dp0app\\install.py"
+'''
 OPTIONAL = ('icon.ico', 'icon.png')     # the icon picked in the Look tab (made with the default one when missing)
 SKIP_PY = ('Lib', '__pycache__')      # (Lib holds only site-packages: 72 MB the toolbox never imports)
 
@@ -150,6 +154,7 @@ def main():
     with zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as z:
         root = 'Link Toolbox/'
         z.writestr(root + 'Link Toolbox.bat', BAT.replace('\n', '\r\n'))
+        z.writestr(root + 'Install Link Toolbox.bat', INSTALL_BAT.replace('\n', '\r\n'))
         readme = (HERE / 'README.txt').read_text(encoding='utf-8') if (HERE / 'README.txt').is_file() else README
         z.writestr(root + 'README.txt', readme.replace('\r\n', '\n').replace('\n', '\r\n'))
         if (HERE / 'LICENSE').is_file():

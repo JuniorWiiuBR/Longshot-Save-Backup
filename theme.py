@@ -29,6 +29,7 @@ FONT = (FAMILY, 9)
 
 # each tab's own colour
 DEFAULT_TABS = {'Mods': '#7ccf8a', 'Save editor': '#e4c783', 'Folders': '#7fb3f5', 'Look': '#f58fc8',
+                'Updates': '#c9e26b',
                 'Stats': '#ff8f8f', 'Inventory': '#f2b25c', 'Progress': '#b79cff', 'All entries': '#63cfc4'}
 TAB_COLORS = dict(DEFAULT_TABS)
 _count = 0

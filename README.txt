@@ -25,6 +25,17 @@ itself. It only touches your mods folder and your save files.
   1. Unzip the "Link Toolbox" folder anywhere (Desktop, Documents, ...).
   2. Double-click  Link Toolbox.bat
 
+To INSTALL it instead (Windows): double-click  Install Link Toolbox.bat
+  It goes to %LOCALAPPDATA%\Programs\Link Toolbox (no admin needed), with
+  Start menu and Desktop shortcuts, and an entry in Windows Settings > Apps
+  to uninstall it. Running it again over an installed copy upgrades it.
+
+UPDATES: the Updates tab checks GitHub for a newer version (when the
+toolbox opens, unless you turn that off). It only tells you: nothing
+changes until you click "Update now", which downloads it, closes the
+toolbox, puts the new version in and opens it again. Your settings,
+backups and icon are kept.
+
 The first time, it also makes a "Link Toolbox" shortcut with the toolbox's
 icon next to the .bat (a .bat file can't have an icon of its own). Use that
 shortcut from then on, or make one on your Desktop in the Look tab.
@@ -231,6 +242,7 @@ Inventory tab to try them.
 -------------------------------------------------------------------------------
 
   Link Toolbox.bat     starts the toolbox
+  Install Link Toolbox.bat   installs it (shortcuts, Windows Settings > Apps)
   README.txt           this file
   app\                 the toolbox itself
      toolbox.pyw         the main window
@@ -242,6 +254,8 @@ Inventory tab to try them.
      theme.py            the colours
      jpeg_win.py         shows the slot picture (uses Windows' own decoder)
      icons.py            the icon and the shortcuts
+     updater.py          the Updates tab
+     install.py          installing and uninstalling
      icon.ico, icon.png  the icon in use
   mods\                the five mods above (install with Mods tab > Add mods...)
   python\              the Python the toolbox runs with (no install needed)

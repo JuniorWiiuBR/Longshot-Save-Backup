@@ -19,6 +19,7 @@ sys.path.insert(0, HERE)
 import nxsave  # noqa: E402
 import theme  # noqa: E402
 import icons  # noqa: E402
+import updater  # noqa: E402
 import jpeg_win  # noqa: E402
 from tkinter import colorchooser  # noqa: E402
 
@@ -80,7 +81,9 @@ class Toolbox:
         self.book.add(self.folders, text='Folders')
         self.look = self.make_look_tab()
         self.book.add(self.look, text='Look')
-        theme.color_tabs(self.book, ['Mods', 'Save editor', 'Folders', 'Look'])
+        self.updates = self.make_updates_tab()
+        self.book.add(self.updates, text='Updates')
+        theme.color_tabs(self.book, ['Mods', 'Save editor', 'Folders', 'Look', 'Updates'])
         self.book.bind('<<NotebookTabChanged>>', lambda _e: self.on_tab(), add='+')
         root.protocol('WM_DELETE_WINDOW', self.close)
         self.on_tab()
@@ -155,6 +158,123 @@ class Toolbox:
         return tab
 
     # -- the Look tab: the theme, the accent colour and each tab's colour
+    # -- the Updates tab: this copy's version, the newest on GitHub, and updating to it
+    def make_updates_tab(self):
+        import queue
+        tab = ttk.Frame(self.book, padding=16)
+        tab.columnconfigure(0, weight=1)
+        ttk.Label(tab, text=f"Link's Toolbox {nxsave.VERSION}", font=(theme.FAMILY, 12, 'bold')).grid(
+            row=0, column=0, sticky='w')
+        self.update_status = ttk.Label(tab, text='Not checked yet.', foreground=theme.SOFT, wraplength=900,
+                                       justify='left')
+        self.update_status.grid(row=1, column=0, sticky='w', pady=(6, 0))
+        bar = ttk.Frame(tab)
+        bar.grid(row=2, column=0, sticky='w', pady=(12, 0))
+        self.check_btn = ttk.Button(bar, text='Check for updates', command=self.check_updates)
+        self.check_btn.pack(side='left')
+        self.update_btn = ttk.Button(bar, text='Update now', command=self.update_now, state='disabled')
+        self.update_btn.pack(side='left', padx=(8, 0))
+        ttk.Button(bar, text='Release page', command=lambda: __import__('webbrowser').open(
+            self.newest.get('page') or f'https://github.com/{updater.REPO}/releases')).pack(side='left', padx=(8, 0))
+        self.auto_check = tk.BooleanVar(value=nxsave.load_settings().get('check_updates', True))
+        ttk.Checkbutton(tab, text='Check for updates when the toolbox opens', variable=self.auto_check,
+                        command=lambda: nxsave.save_settings({**nxsave.load_settings(),
+                                                              'check_updates': self.auto_check.get() or 'off'})).grid(
+            row=3, column=0, sticky='w', pady=(10, 0))
+        self.update_bar = ttk.Progressbar(tab, mode='determinate', maximum=100)
+        self.update_bar.grid(row=4, column=0, sticky='ew', pady=(12, 0))
+        self.update_bar.grid_remove()
+        ttk.Label(tab, text='What\'s new', font=(theme.FAMILY, 10, 'bold')).grid(row=5, column=0, sticky='w',
+                                                                                pady=(14, 4))
+        self.update_notes = tk.Text(tab, height=14, wrap='word', relief='flat', padx=8, pady=6, font=theme.FONT)
+        self.update_notes.grid(row=6, column=0, sticky='nsew')
+        tab.rowconfigure(6, weight=1)
+        self.update_notes.insert('1.0', 'The newest release\'s notes show here once checked.')
+        self.update_notes.configure(state='disabled')
+        why = updater.can_update()
+        ttk.Label(tab, text=why or 'Update now downloads the Windows download from GitHub, closes the toolbox, puts '
+                  'the new version in and opens it again. Your settings, backups, names lists and icon are kept.',
+                  foreground=theme.MUTED, wraplength=900, justify='left').grid(row=7, column=0, sticky='w',
+                                                                               pady=(10, 0))
+        self.newest = {}
+        self.update_q = queue.Queue()
+        self.root.after(200, self.poll_updates)
+        return tab
+
+    def check_updates(self, quiet=False):
+        """Asks GitHub for the newest release (on another thread: the window stays usable)."""
+        import threading
+        self.check_btn['state'] = 'disabled'
+        if not quiet:
+            self.update_status['text'] = 'Checking GitHub...'
+
+        def work():
+            try:
+                self.update_q.put(('latest', (updater.latest(), quiet)))
+            except Exception as err:      # (offline, GitHub down...)
+                self.update_q.put(('error', (str(err), quiet)))
+        threading.Thread(target=work, daemon=True).start()
+
+    def poll_updates(self):
+        try:
+            while True:
+                what, (arg, quiet) = self.update_q.get_nowait()
+                self.check_btn['state'] = 'normal'
+                if what == 'error':
+                    if not quiet:
+                        self.update_status['text'] = f'Could not reach GitHub: {arg}'
+                elif what == 'latest':
+                    self.show_latest(arg)
+                elif what == 'progress':
+                    self.update_bar['value'] = arg
+        except Exception:
+            pass
+        self.root.after(200, self.poll_updates)
+
+    def show_latest(self, rel):
+        self.newest = rel
+        self.update_notes.configure(state='normal')
+        self.update_notes.delete('1.0', 'end')
+        import re
+        notes = re.sub(r'\*\*|`|^#+\s*', '', rel['notes'], flags=re.M)          # (GitHub's formatting marks)
+        notes = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', notes).replace('\r', '')  # ([text](link) -> text)
+        notes = re.sub(r'^(\s*)- ', lambda m: m.group(1) + '• ', notes, flags=re.M)
+        self.update_notes.insert('1.0', f"{rel['version']}\n\n{notes}")
+        self.update_notes.configure(state='disabled')
+        newer = updater.is_newer(rel['version']) and rel.get('url')
+        if newer:
+            size = f" ({rel['size'] / 2**20:.0f} MB)" if rel.get('size') else ''
+            self.update_status['text'] = f"{rel['version']} is out{size}: you have {nxsave.VERSION}."
+            self.book.tab(self.updates, text='Updates (new)')
+        else:
+            self.update_status['text'] = f"You have the newest version ({nxsave.VERSION})."
+        self.update_btn['state'] = 'normal' if newer and not updater.can_update() else 'disabled'
+
+    def update_now(self):
+        rel = self.newest
+        if not rel.get('url') or not (self.mods.may_close() and self.saves.may_close()):
+            return
+        if nxsave.game_running():
+            messagebox.showwarning('Update', 'Close the game first, then update.', parent=self.root)
+            return
+        if not messagebox.askyesno('Update', f"Update to {rel['version']}?\n\nThe toolbox downloads it, closes, puts "
+                                   'the new version in and opens again. Your settings, backups and icon are kept.',
+                                   parent=self.root):
+            return
+        import threading
+        self.update_btn['state'] = self.check_btn['state'] = 'disabled'
+        self.update_bar.grid()
+        self.update_status['text'] = f"Downloading {rel['version']}..."
+
+        def work():
+            try:
+                updater.start(rel['url'], lambda done, total: self.update_q.put(
+                    ('progress', (100 * done / total if total else 0, True))))
+                self.root.after(0, self.root.destroy)        # the update script waits for this to close
+            except Exception as err:
+                self.update_q.put(('error', (f'The update failed: {err}', False)))
+        threading.Thread(target=work, daemon=True).start()
+
     def make_look_tab(self):
         tab = ttk.Frame(self.book, padding=16)
         t = nxsave.load_settings().get('theme') or {}
@@ -177,7 +297,7 @@ class Toolbox:
 
         tabs = ttk.LabelFrame(tab, text='Tab colours', padding=(12, 8))
         tabs.pack(fill='x', pady=(12, 0))
-        groups = (('Toolbox', ('Mods', 'Save editor', 'Folders', 'Look')),
+        groups = (('Toolbox', ('Mods', 'Save editor', 'Folders', 'Look', 'Updates')),
                   ('Save editor', ('Stats', 'Inventory', 'Progress', 'All entries')))
         for c, (title, names) in enumerate(groups):
             ttk.Label(tabs, text=title, foreground=theme.MUTED).grid(row=0, column=c * 5, sticky='w', pady=(0, 4))
@@ -491,7 +611,8 @@ class Toolbox:
     def current(self):
         sel = self.book.select()
         return ('mods' if sel == str(self.mods) else 'saves' if sel == str(self.saves) else
-                'look' if sel == str(getattr(self, 'look', None)) else 'folders')
+                'look' if sel == str(getattr(self, 'look', None)) else
+                'updates' if sel == str(getattr(self, 'updates', None)) else 'folders')
 
     def set_title(self, which, text):
         """Each tab says what it would call its window; the window shows the one in front, and a * on a tab's name
@@ -509,7 +630,7 @@ class Toolbox:
         which = self.current()
         if which == 'mods':
             self.mods.fill()          # (the game may have been started or closed since)
-        if which in ('folders', 'look'):
+        if which in ('folders', 'look', 'updates'):
             self.root.title(f'{BASE_TITLE} - {which.title()}')
             return
         self.set_title(which, self.titles.get(which, ''))
@@ -530,6 +651,12 @@ def main():
     icons.apply(root)
     if '--selftest' not in sys.argv:
         icons.first_run()
+        if os.name == 'nt':
+            try:                      # (installed copy: Windows Settings > Apps shows the version after an update)
+                import install
+                install.refresh_version()
+            except Exception:
+                pass
     if nxsave.find_game_dir() is None and '--selftest' not in sys.argv:
         root.withdraw()
         if not ask_game_dir(root):
@@ -538,6 +665,8 @@ def main():
         root.deiconify()
     load_tools()
     box = Toolbox(root)
+    if '--selftest' not in sys.argv and nxsave.load_settings().get('check_updates', True) is True:
+        root.after(1500, lambda: box.check_updates(quiet=True))    # (quiet: no message when offline)
     if '--selftest' in sys.argv:      # open both tabs, switch between them, close: nothing is written
         def done():
             print('tabs:', [box.book.tab(t, 'text') for t in box.book.tabs()], '| title:', root.title(),

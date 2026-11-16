@@ -12,6 +12,10 @@ One small Windows app to switch your mods on and off before you play, and to edi
 
 Get **`Link Toolbox.zip`** from the [Releases](../../releases) page, unzip it anywhere, and double-click **`Link Toolbox.bat`**.
 
+**Install it (Windows):** in the unzipped folder, double-click **`Install Link Toolbox.bat`**. It installs the toolbox for you to `%LOCALAPPDATA%\Programs\Link Toolbox` (no admin needed), with Start menu and Desktop shortcuts, and an entry in **Windows Settings → Apps** to uninstall it. Running it again over an installed copy upgrades it and keeps your settings.
+
+**Updates:** the **Updates** tab shows your version and checks GitHub for a newer one, by itself when the toolbox opens (you can turn that off) or with a button. It only tells you: nothing changes until you click **Update now**. That downloads the new version, closes the toolbox, puts it in place and reopens it, keeping your settings, backups, names lists and icon.
+
 **Linux (new, untested):** get **`Link Toolbox (Linux).tar.gz`** instead, unpack it (`tar xzf "Link Toolbox (Linux).tar.gz"`) and open **`Link Toolbox.sh`**. It uses your system's Python, which must be **3.14 or newer with Tk** (`python3-tk`, `python3-tkinter` or `tk`). If either is missing, the script says what to install. It works best with Longshot's Linux build, whose saves are in `~/.local/share/longshot/save`. The slot picture needs Pillow, ImageMagick or ffmpeg. The Linux version hasn't been tried on a real Linux PC yet, so please report what works.
 
 The first time, it also makes a **Link Toolbox** shortcut with the toolbox's icon next to the `.bat` file (a `.bat` can't have an icon of its own), so you can use that shortcut from then on. There's nothing to install: the zip brings its own Python. You need Windows 10 or 11 and a game built with Triforce (or Longshot). The toolbox finds the game where Triforce installed it, or asks you once for the folder that has `Triforce.exe` (or `longshot.exe`).
@@ -137,7 +141,9 @@ It writes `share\Link Toolbox.zip`. Upload that to a GitHub release.
 | `theme.py` | Themes and tab colours |
 | `jpeg_win.py` | Turns the slot picture into PNG with Windows' own decoder |
 | `icons.py` | Draws the icons, makes `icon.ico` from them or from a slot picture, and makes the shortcuts |
-| `make_share_zip.py` | Builds `Link Toolbox.zip` |
+| `updater.py` | The Updates tab: checks GitHub's newest release, downloads it and puts it in place |
+| `install.py` | Installs for this Windows user (shortcuts, Settings → Apps entry), and uninstalls |
+| `make_share_zip.py` | Builds `Link Toolbox.zip` (and, with `--linux`, the Linux `.tar.gz`) |
 
 The names of the save's entries aren't stored in this repository. The toolbox reads them from your own game files the first time and keeps them in `names-cache-<number>.json` (one for each game folder, so Triforce and Longshot each have their own).
 
