@@ -74,9 +74,8 @@ def share_mods():
     mods (on even when they are off here) and the SHIP_OFF mods (switched off: their name keeps a leading _)."""
     sys.path.insert(0, str(HERE))
     import nxsave
-    # (from the Triforce game when there is one, whatever game the toolbox is set to now)
-    triforce = next((p for app, p in nxsave.all_game_dirs() if app == 'Triforce'), None)
-    mods = (triforce or nxsave.game_dir()) / 'mods'
+    # (from the game the toolbox is set to: the main build, Longshot rc; with sharing on, the shared mods folder)
+    mods = nxsave.mods_dir_for(nxsave.game_dir())
     print('mods from:', mods)
     import re
     plain = lambda name: re.sub(r'^(?:[-_]+)?(?:\d+-)?', '', name)
