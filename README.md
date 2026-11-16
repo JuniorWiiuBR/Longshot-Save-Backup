@@ -106,9 +106,12 @@ Five themes (Dark green, Dark grey, Dark blue, Midnight purple, Light), an accen
 
 [Longshot](https://git.magicbean.dev/MagicBeanDev/Longshot) is another PC port of the same game, by MagicBeanDev (a continuation of Hookshot). It loads mods by the same rules as Triforce: a `mods` folder in the game folder, a `romfs` folder in each mod, `_` or `-` at the start of a name turns a mod off, the mod whose name sorts last wins, and only one size table is used. That means the Mods tab, the included mods and the size table work with it too. Its saves have the same layout, so the save editor reads them as well.
 
-**New builds:** Longshot's launcher builds every version into a folder of its own, so a new build starts with an empty `mods` folder. When the toolbox starts and finds a newer Longshot build than the one you use, it asks once to **copy your mods across** (on/off and order kept) and **switch to the new build**. The old build is left as it was, and the size table is rebuilt for the new one. Tick **Bring my mods to new Longshot builds without asking** (Folders tab) to have it done automatically. The save editor's names are reused, so a new build opens straight away.
+### Several builds (any app)
 
-**One shared mods folder (optional):** Folders tab → **Use one shared mods folder...** makes one folder (e.g. `Games\Longshot\mods`) that **every** Longshot build uses, old and new, so there's nothing to copy, ever. It sets Longshot's own `HOS_MODS` setting for your Windows user. **Stop sharing** undoes it, and can copy the shared mods back into the build you use. It only affects Longshot.
+Some apps put every build in a folder of its own (Longshot's launcher always does), so a new build starts with an empty `mods` folder. This works for **every app**: Triforce, Longshot, NX2navi or another one that reads a `mods` folder.
+
+- **New builds:** when the toolbox starts and finds a newer build of the app you use, it asks once to **copy your mods across** (on/off and order kept) and **switch to the new build**. It uses the build's version file (`triforce_version.txt`, `longshot_version.txt`), or else the program's date. The old build is left as it was, and the size table is rebuilt for the new one. Tick **Bring my mods to new builds without asking** (Folders tab) to have it done automatically. The save editor's names are reused, so a new build opens straight away.
+- **One shared mods folder (optional):** Folders tab → **Use one shared mods folder...** makes one folder (e.g. `Games\Link Toolbox mods`) that **every build of every app** uses. Each build's `mods` folder becomes a link to it (a Windows junction, no admin needed), so the app reads it as its own. New builds are linked as soon as the toolbox finds them, so there's nothing to copy, ever. The mods already in those folders are moved into it, and any with clashing names are kept in `mods (before sharing)`. **Stop sharing** removes the links (never the shared folder itself) and can copy the mods back into every build.
 
 **Longshot is still in development** (release candidates for now), so support here is early: anything Longshot changes may need a toolbox update.
 
@@ -159,7 +162,7 @@ It writes `share\Link Toolbox.zip`. Upload that to a GitHub release.
 | `updater.py` | The Updates tab: checks GitHub's newest release, downloads it and puts it in place |
 | `install.py` | Installs for this Windows user (shortcuts, Settings → Apps entry), and uninstalls |
 | `install.ps1` | The one-line install: downloads the newest release and opens its installer |
-| `builds.py` | New Longshot builds: copies the mods across and switches to the new build |
+| `builds.py` | Several builds of any app: copies the mods to a new build and switches to it; the shared mods folder (folder links) |
 | `make_share_zip.py` | Builds `Link Toolbox.zip` (and, with `--linux`, the Linux `.tar.gz`) |
 
 The names of the save's entries aren't stored in this repository. The toolbox reads them from your own game files the first time and keeps them in `names-cache-<number>.json` (one for each game folder, so Triforce and Longshot each have their own).

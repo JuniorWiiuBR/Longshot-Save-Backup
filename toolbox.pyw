@@ -146,12 +146,12 @@ class Toolbox:
         self.fill_kept()
         r += 1
         # Longshot builds: each one has its own folder (and its own mods folder)
-        lb = ttk.LabelFrame(tab, text='Longshot builds', padding=(10, 4))
+        lb = ttk.LabelFrame(tab, text='Builds (Triforce, Longshot, NX2navi, any app)', padding=(10, 4))
         lb.grid(row=r, column=0, columnspan=4, sticky='ew', pady=(10, 0))
         lb.columnconfigure(1, weight=1)
         self.carry_var = tk.BooleanVar(value=nxsave.load_settings().get('carry_mods') is True)
-        ttk.Checkbutton(lb, text='Bring my mods to new Longshot builds without asking (when the toolbox finds a newer '
-                                 'build, it copies the mods across and switches to it)', variable=self.carry_var,
+        ttk.Checkbutton(lb, text='Bring my mods to new builds without asking (when the toolbox finds a newer build of '
+                                 'the app you use, it copies the mods across and switches to it)', variable=self.carry_var,
                         command=lambda: nxsave.save_settings({**nxsave.load_settings(),
                                                               'carry_mods': True if self.carry_var.get() else 'off'})
                         ).grid(row=0, column=0, columnspan=3, sticky='w')
@@ -546,24 +546,21 @@ class Toolbox:
                                                                 else '') for app, path in self.found]
         self.forget_btn['state'] = 'disabled'
 
-    # -- one shared mods folder for every Longshot build (Longshot's HOS_MODS setting)
+    # -- one shared mods folder for every build of every app (each build's mods folder becomes a link to it)
     def show_shared(self):
-        shared = nxsave.shared_mods()
+        shared = nxsave.shared_folder()
+        legacy = nxsave.shared_mods() if not shared else None       # (v1.1.7's Longshot-only HOS_MODS)
         if shared:
-            self.shared_label['text'] = f'On: every Longshot build uses {shared}'
+            n = sum(1 for g in __import__('builds').all_builds() if nxsave.is_link(Path(g) / 'mods'))
+            self.shared_label['text'] = (f'On: {shared}\n{n} build{"s" if n != 1 else ""} use it (new builds are '
+                                         'linked to it when the toolbox finds them).')
+        elif legacy:
+            self.shared_label['text'] = f'On for Longshot only (HOS_MODS): {legacy}. Stop sharing turns it off.'
         else:
-            self.shared_label['text'] = ('Off: each Longshot build uses the mods folder in its own folder. On: one '
-                                         'folder for every build, so a new build has your mods straight away.')
-        self.share_btn['state'] = 'disabled' if shared or os.name != 'nt' else 'normal'
-        self.unshare_btn['state'] = 'normal' if shared else 'disabled'
-
-    def longshot_now(self):
-        """The Longshot build in use, else the newest one found; None without Longshot."""
-        game = nxsave.game_dir()
-        if nxsave.app_of(game) == 'Longshot':
-            return game
-        found = nxsave.longshot_builds()
-        return found[0][1] if found else None
+            self.shared_label['text'] = ('Off: each build uses the mods folder in its own folder. On: one folder for '
+                                         'every build of every app, so a new build has your mods straight away.')
+        self.share_btn['state'] = 'disabled' if shared or legacy else 'normal'
+        self.unshare_btn['state'] = 'normal' if shared or legacy else 'disabled'
 
     def after_shared_change(self):
         mod_loader.DEFAULT_MODS = nxsave.mods_dir_for(mod_loader.GAME)
@@ -574,61 +571,54 @@ class Toolbox:
 
     def share_mods(self):
         import builds
-        import shutil
-        build = self.longshot_now()
-        suggest = Path.home() / 'Games' / 'Longshot' / 'mods'
+        if not (self.mods.may_close()):
+            return
+        if nxsave.game_running():
+            messagebox.showwarning('Shared mods folder', 'Close the game first.', parent=self.root)
+            return
+        suggest = Path.home() / 'Games' / 'Link Toolbox mods'
+        games = builds.all_builds()
         answer = messagebox.askyesnocancel(
-            'Shared mods folder', 'Make one mods folder that every Longshot build uses (old and new)?\n\nThis sets '
-            'Longshot\'s HOS_MODS setting for your Windows user (a user environment variable). "Stop sharing" here '
-            f'undoes it.\n\nUse this folder?\n  {suggest}\n\nYes: use it.   No: pick another folder.',
-            parent=self.root)
+            'Shared mods folder', 'Use one mods folder for every build of every app (Triforce, Longshot, NX2navi...)?'
+            f'\n\nEach build\'s "mods" folder becomes a link to it ({len(games)} found now; new builds are linked when '
+            'the toolbox finds them). The mods already in those folders are moved into it. "Stop sharing" undoes it.'
+            f'\n\nUse this folder?\n  {suggest}\n\nYes: use it.   No: pick another folder.', parent=self.root)
         if answer is None:
             return
         folder = suggest if answer else Path(filedialog.askdirectory(parent=self.root, mustexist=False,
                                                                        title='The shared mods folder') or '')
         if not str(folder) or str(folder) == '.':
             return
-        folder.mkdir(parents=True, exist_ok=True)
-        mods = [p for p in builds.mod_folders(Path(build) / 'mods')] if build else []
-        mods = [p for p in mods if not p.name.startswith('~') and not (folder / p.name).exists()]
-        if mods and messagebox.askyesno('Shared mods folder', f'Copy the {len(mods)} mods of the Longshot build in use '
-                                        f'into it?\n  from {Path(build) / "mods"}', parent=self.root):
-            for p in mods:
-                shutil.copytree(p, folder / p.name)
-        try:
-            nxsave.set_shared_mods(folder)
-            builds.rebuild_size_table(build) if build else None
-        except OSError as err:
-            messagebox.showerror('Shared mods folder', f'It could not be set:\n{err}', parent=self.root)
+        if any(builds.same(folder, Path(g) / 'mods') or builds.same(folder, g) for g in games):
+            messagebox.showerror('Shared mods folder', 'Pick a folder outside the game folders.', parent=self.root)
             return
+        linked, failed = builds.start_sharing(folder)
         self.after_shared_change()
-        self.folders_status['text'] = f'Shared mods folder on: {folder}. Longshot builds started from now on use it.'
+        self.fill_found()
+        msg = f'Shared mods folder on: {folder}\n\n{len(linked)} build{"s" if len(linked) != 1 else ""} now use it.'
+        if failed:
+            msg += '\n\nCould not link:\n' + '\n'.join(failed)
+        (messagebox.showwarning if failed else messagebox.showinfo)('Shared mods folder', msg, parent=self.root)
+        self.folders_status['text'] = f'Shared mods folder on: {folder}'
 
     def unshare_mods(self):
         import builds
-        import shutil
-        shared = nxsave.shared_mods()
-        if not shared or not messagebox.askyesno(
-                'Stop sharing', f'Stop the shared mods folder?\n  {shared}\n\nLongshot builds go back to the mods folder '
-                'in their own folder. (The shared folder itself is left as it is.)', parent=self.root):
+        shared = nxsave.shared_folder() or nxsave.shared_mods()
+        if not shared or not self.mods.may_close():
             return
-        build = self.longshot_now()
-        mods = [p for p in builds.mod_folders(shared) if not p.name.startswith('~')]
-        target = Path(build) / 'mods' if build else None
-        if target and mods and messagebox.askyesno('Stop sharing', f'Copy the {len(mods)} shared mods into the Longshot '
-                                                   f'build in use?\n  {target}', parent=self.root):
-            target.mkdir(parents=True, exist_ok=True)
-            for p in mods:
-                if not (target / p.name).exists():
-                    shutil.copytree(p, target / p.name)
-        try:
-            nxsave.set_shared_mods(None)
-            builds.rebuild_size_table(build) if build else None
-        except OSError as err:
-            messagebox.showerror('Stop sharing', f'It could not be undone:\n{err}', parent=self.root)
+        if nxsave.game_running():
+            messagebox.showwarning('Stop sharing', 'Close the game first.', parent=self.root)
             return
+        answer = messagebox.askyesnocancel(
+            'Stop sharing', f'Stop the shared mods folder?\n  {shared}\n\nEach build gets its own mods folder again '
+            '(the shared folder itself is left as it is).\n\nCopy the shared mods into every build\'s own mods '
+            'folder?\nYes: copy them.   No: start them empty.', parent=self.root)
+        if answer is None:
+            return
+        done = builds.stop_sharing(copy_back=answer)
         self.after_shared_change()
-        self.folders_status['text'] = 'Shared mods folder off: each Longshot build uses its own mods folder again.'
+        self.folders_status['text'] = (f'Shared mods folder off: {len(done)} build{"s" if len(done) != 1 else ""} use '
+                                       'their own mods folder again.')
 
     KEPT_KINDS = (('games', 'Game'), ('mods', 'Mods'), ('saves', 'Saves'))
 

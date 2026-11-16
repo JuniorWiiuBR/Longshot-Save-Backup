@@ -361,38 +361,93 @@ def _game_dir_candidates():
 # an empty mods folder. The toolbox spots new builds (and brings the mods along), or points Longshot at one shared mods
 # folder for every build (its HOS_MODS setting, a Windows user environment variable).
 
-def longshot_version(build):
-    """'v3.0.0-rc.4' from a build's longshot_version.txt, '' when it has none."""
-    try:
-        for line in (Path(build) / 'longshot_version.txt').read_text(encoding='utf-8', errors='replace').splitlines():
-            if line.startswith('version='):
-                return line.split('=', 1)[1].strip()
-    except OSError:
-        pass
+VERSION_FILES = {'Triforce': 'triforce_version.txt', 'Longshot': 'longshot_version.txt'}
+
+
+def build_version(build, app=None):
+    """'v3.0.0-rc.4' / 'v0.4.0' from a build's version file (Triforce's or Longshot's: 'version=...'), '' when it has
+    none (NX2navi and other apps: then the program's date tells which build is newer)."""
+    names = [VERSION_FILES[app]] if app in VERSION_FILES else list(VERSION_FILES.values())
+    for name in names:
+        try:
+            for line in (Path(build) / name).read_text(encoding='utf-8', errors='replace').splitlines():
+                if line.startswith('version='):
+                    return line.split('=', 1)[1].strip()
+        except OSError:
+            pass
     return ''
 
 
-def version_key(version, build=None):
-    """Sortable: v3.0.0 > v3.0.0-rc.5 > v3.0.0-rc.4; no version: the build's date."""
+def longshot_version(build):
+    return build_version(build, 'Longshot')
+
+
+def builds_of(app):
+    """[(version, folder)] of every build of an app found (Triforce, Longshot, NX2navi...), the newest first."""
+    exe = dict(APPS).get(app)
+    out = [(build_version(d, app), d) for a, d in all_game_dirs() if a == app]
+    return sorted(out, key=lambda vb: version_key(vb[0], vb[1], exe), reverse=True)
+
+
+# -- one shared mods folder for every build of every app: each build's "mods" folder becomes a link to it (a Windows
+#    junction, no admin needed; a symlink on Linux), so any app reading its mods folder reads the shared one.
+def shared_folder():
+    """The shared mods folder set in the Folders tab, None when sharing is off."""
+    p = load_settings().get('shared_mods')
+    return Path(p) if p else None
+
+
+def is_link(p):
+    p = Path(p)
+    try:
+        return p.is_symlink() or bool(getattr(os.path, 'isjunction', lambda _x: False)(p))
+    except OSError:
+        return False
+
+
+def link_target(p):
+    try:
+        return Path(os.path.realpath(p))
+    except OSError:
+        return None
+
+
+def make_link(link, target):
+    """A folder link at link -> target (Windows: a junction, which needs no admin)."""
+    import subprocess
+    link, target = Path(link), Path(target)
+    if WINDOWS:
+        r = subprocess.run(['cmd', '/c', 'mklink', '/J', str(link), str(target)], capture_output=True, text=True,
+                           creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        if r.returncode != 0 or not is_link(link):
+            raise OSError(f'the link {link} could not be made: {(r.stdout + r.stderr).strip()}')
+    else:
+        os.symlink(target, link, target_is_directory=True)
+
+
+def remove_link(link):
+    """Removes a folder link ONLY (never what it points to)."""
+    link = Path(link)
+    if not is_link(link):
+        raise OSError(f'{link} is not a link: not removed')
+    if link.is_symlink() and not WINDOWS:
+        link.unlink()
+    else:
+        os.rmdir(link)        # (on a junction: removes the link itself, the folder it points to stays)
+
+
+def version_key(version, build=None, exe_name='longshot.exe'):
+    """Sortable: v3.0.0 > v3.0.0-rc.5 > v3.0.0-rc.4; no version: the date of the build's program."""
     m = re.match(r'v?(\d+)\.(\d+)\.(\d+)(?:[-.]?rc\.?(\d+))?', version or '')
     if not m:
-        exe = program(build, 'longshot.exe') if build else None
+        exe = program(build, exe_name or 'longshot.exe') if build else None
         return (0, 0, 0, 0, 0, exe.stat().st_mtime if exe else 0)
     a, b, c, rc = m.groups()
     return (int(a), int(b), int(c), 0 if rc else 1, int(rc or 0), 0)
 
 
 def longshot_builds():
-    """[(version, folder)] of every Longshot build found, the newest first."""
-    out, seen = [], set()
-    for d in _game_dir_candidates():
-        if not d or not program(d, 'longshot.exe'):
-            continue
-        key = os.path.normcase(str(Path(d).resolve()))
-        if key not in seen:
-            seen.add(key)
-            out.append((longshot_version(d), Path(d)))
-    return sorted(out, key=lambda vb: version_key(vb[0], vb[1]), reverse=True)
+    return builds_of('Longshot')
 
 
 def shared_mods():
