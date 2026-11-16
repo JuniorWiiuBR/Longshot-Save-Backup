@@ -1,7 +1,7 @@
 """
 Longshot Save Backup
 - Vigia a pasta "builds" do Longshot Launcher.
-- Quando surge uma build nova (ex.: nightly-179-70087604) e ela cria a sua pasta "user",
+- Quando surge uma build nova (ex.: nightly-123-abcd1234) e ela cria a sua pasta "user",
   COPIA as pastas "user" e "mods" da build antiga para a nova e, ao mesmo tempo, faz o
   backup da pasta "user" antiga no Google Drive (o backup é só da "user").
 - Aba "Mods": adiciona mods (pasta ou .zip), liga/desliga, ordena e salva por build
@@ -25,7 +25,7 @@ from tkinter import filedialog
 
 import mod_manager as mm
 from mods_tab import ModsTab
-from ui_common import (BG, CARD, CARD2, GOLD, FG, MUTED, LINE,
+from ui_common import (APP_VERSION, BG, CARD, CARD2, GOLD, FG, MUTED, LINE,
                        FlatButton, TriforceBackground, load_logo)
 
 APP_NAME = "Longshot Save Backup"
@@ -38,13 +38,17 @@ POLL_SECONDS = 5
 MUSIC_VOLUME = 40  # fixo, em %
 
 DEFAULT_CFG = {
-    "builds": r"D:\LongShotGame\LongshotLauncher-data\builds",
+    "builds": "",
     "dest": "",
     "known": [],
     "lang": "pt",
 }
 
 # ---------------------------------------------------------------- textos
+HELP_PT = 'PRIMEIROS PASSOS (passo a passo)\n\n1) Instale o Google Drive para computador\n   Baixe em google.com/drive/download, instale e entre com a sua conta Google. Ele cria uma unidade (ou pasta) chamada "Google Drive" no Explorador de Arquivos; a letra da unidade pode variar de PC para PC. É por ela que o backup chega à nuvem.\n\n2) Crie a pasta do backup no Google Drive\n   a) Abra o Explorador de Arquivos e entre em "Google Drive" > "Meu Drive".\n   b) Clique com o botão direito num espaço vazio > Novo > Pasta.\n   c) Dê um nome, por exemplo "Longshot Backup".\n   (Dá para usar o próprio "Meu Drive", mas uma pasta só para isso deixa tudo mais organizado.)\n\n3) Diga ao programa onde estão as pastas (aba Principal)\n   - "Pasta das builds": clique em Procurar e escolha a pasta "builds", que fica dentro da pasta de dados do Longshot Launcher (LongshotLauncher-data), no lugar onde você instalou o jogo. Dentro dela ficam as pastas de cada versão do jogo, com nomes parecidos com nightly-123-abcd1234.\n   - "Pasta do Google Drive": clique em Procurar e escolha a pasta que você criou no passo 2. O programa tenta achar o seu "Meu Drive" sozinho, mas confira se é a pasta certa.\n\n4) Clique em "Iniciar detecção de builds" e deixe o programa aberto (pode minimizar).\n   Na primeira vez, as builds que já existem são ignoradas: só as builds novas disparam a cópia.\n\nO QUE ACONTECE\n\nQuando o jogo atualiza e cria uma build nova com uma pasta user dentro, o programa:\n  - COPIA a pasta user e a pasta mods da build antiga para a build nova;\n  - ao mesmo tempo, faz o backup da user antiga no Google Drive (só a user vai para o Drive, a mods não).\nAs pastas da build antiga continuam intactas: nada é movido nem apagado.\n\nABA MODS\n\nEscolha a build (por padrão a mais nova) e gerencie os mods dela:\n  - "Adicionar pasta..." / "Adicionar .zip...": um mod é uma pasta com uma pasta "romfs" dentro. Pode escolher um ou vários .zip; o programa acha os mods lá dentro.\n  - Duplo clique (ou "Ligar/Desligar") liga e desliga. "Subir"/"Descer" mudam a ordem: quando dois mods trocam o mesmo arquivo, vence o que está mais embaixo.\n  - Nada muda de verdade até clicar em "Salvar" (ele renomeia as pastas e atualiza a tabela de tamanhos que os mods ligados precisam). "Salvar e jogar" salva e abre o jogo.\n  - Feche o jogo antes de adicionar ou salvar mods.\nQuando uma build nova é detectada, os mods são copiados e a tabela de tamanhos é refeita para a build nova.\n\nDICAS\n\n- O backup fica em: <sua pasta do Drive>\\LongshotSaves\\user. O programa nunca apaga nada lá.\n- Não existe backup automático: ele só acontece junto com a cópia.\n- "Copiar user agora" (aba Principal) faz a cópia (user e mods) e o backup na hora, entre as duas builds mais recentes.\n- Se a cópia falhar (jogo ou launcher abertos), feche-os: o programa tenta de novo sozinho.\n- Se o backup não chegar ao Drive, abra o app Google Drive (perto do relógio do Windows) e confira se ele está conectado e sincronizando.\n- A música de fundo toca sempre enquanto o programa estiver aberto (volume fixo em 40%).\n- Idioma: use os botões PT-BR / EN no canto superior direito.'
+
+HELP_EN = 'FIRST STEPS (step by step)\n\n1) Install Google Drive for desktop\n   Download it at google.com/drive/download, install it and sign in with your Google account. It creates a drive (or folder) called "Google Drive" in File Explorer; the drive letter can differ from PC to PC. That is how the backup reaches the cloud.\n\n2) Create the backup folder on Google Drive\n   a) Open File Explorer and go to "Google Drive" > "My Drive".\n   b) Right-click an empty space > New > Folder.\n   c) Give it a name, for example "Longshot Backup".\n   (You can use "My Drive" itself, but a folder just for this keeps things tidy.)\n\n3) Tell the program where the folders are (Main tab)\n   - "Builds folder": click Browse and choose the "builds" folder, which is inside the Longshot Launcher data folder (LongshotLauncher-data), wherever you installed the game. Inside it are the folders for each game version, with names like nightly-123-abcd1234.\n   - "Google Drive folder": click Browse and choose the folder you created in step 2. The program tries to find your "My Drive" by itself, but check that it is the right one.\n\n4) Click "Start build detection" and keep the program open (you can minimize it).\n   The first time, builds that already exist are ignored: only new builds trigger the copy.\n\nWHAT HAPPENS\n\nWhen the game updates and creates a new build with a user folder inside, the program:\n  - COPIES the user folder and the mods folder from the old build to the new build;\n  - at the same time, backs the old user folder up to Google Drive (only user goes to the Drive, not mods).\nThe old build\'s folders stay untouched: nothing is moved or deleted.\n\nMODS TAB\n\nPick the build (the newest by default) and manage its mods:\n  - "Add folder..." / "Add .zip...": a mod is a folder with a "romfs" folder inside. You can pick one or several .zip files; the program finds the mods inside.\n  - Double-click (or "Turn on/off") switches a mod. "Move up"/"Move down" change the order: when two mods replace the same file, the lower one wins.\n  - Nothing really changes until you click "Save" (it renames the folders and updates the size table the mods that are on need). "Save and play" saves and opens the game.\n  - Close the game before adding or saving mods.\nWhen a new build is detected, the mods are copied and the size table is rebuilt for the new build.\n\nTIPS\n\n- The backup lives in: <your Drive folder>\\LongshotSaves\\user. The program never deletes anything there.\n- There is no automatic backup: it only happens together with the copy.\n- "Copy user now" (Main tab) does the copy (user and mods) and the backup right away, between the two newest builds.\n- If the copy fails (game or launcher open), close them: the program retries by itself.\n- If the backup does not reach the Drive, open the Google Drive app (near the Windows clock) and check that it is connected and syncing.\n- The background music always plays while the program is open (volume fixed at 40%).\n- Language: use the PT-BR / EN buttons at the top right.'
+
 TR = {
     "pt": {
         "title": "Longshot Save Backup",
@@ -60,11 +64,11 @@ TR = {
         "copy_now": "Copiar user agora",
         "st_idle": "● Parado",
         "st_wait": "● Aguardando build nova...",
-        "log_choose_drive": "Escolha a pasta do Google Drive e clique em Iniciar detecção de builds.",
+        "log_choose_drive": "Primeiro uso: escolha a pasta das builds e a pasta do Google Drive (veja o passo a passo na aba Ajuda) e clique em Iniciar detecção de builds.",
         "log_started": "Detecção de builds iniciada. (Sem backup automático: só ao copiar a user.)",
         "log_stopped": "Detecção de builds parada.",
-        "log_no_builds": "A pasta das builds não existe.",
-        "log_no_drive": "Escolha a pasta do Google Drive (a que o app do Drive sincroniza).",
+        "log_no_builds": "Escolha a pasta das builds (a pasta \"builds\" dentro de LongshotLauncher-data).",
+        "log_no_drive": "Escolha a pasta do Google Drive (veja na aba Ajuda como criá-la).",
         "log_detected": "Build nova detectada: {name}. Aguardando terminar de gravar...",
         "log_new": "Build nova: {new} | user antiga: {old}",
         "log_no_old": "{name}: sem build antiga com user para copiar.",
@@ -128,54 +132,7 @@ TR = {
         "st_py314": "o programa foi compilado com um Python anterior ao 3.14, que essa tabela exige.",
         "log_music_missing": "Música de fundo não encontrada (background.mp3).",
         "log_music_err": "Não consegui tocar a música de fundo.",
-        "help": (
-            "COMO USAR\n"
-            "\n"
-            "1) Instale o Google Drive para computador e entre na sua conta Google. "
-            "Ele cria uma pasta no PC (ex.: G:\\Meu Drive) que sincroniza com o seu Drive. "
-            "É nela que o backup é salvo.\n"
-            "\n"
-            "2) Na aba Principal, confira a \"Pasta das builds\". Normalmente é:\n"
-            "   D:\\LongShotGame\\LongshotLauncher-data\\builds\n"
-            "\n"
-            "3) Em \"Pasta do Google Drive\", escolha a pasta do Drive no seu PC. "
-            "O programa tenta achar sozinho; se não achar, clique em Procurar.\n"
-            "\n"
-            "4) Clique em \"Iniciar detecção de builds\" e deixe o programa aberto (pode minimizar).\n"
-            "\n"
-            "O QUE ACONTECE\n"
-            "\n"
-            "Quando o jogo atualiza e cria uma build nova (ex.: nightly-179-70087604) com uma "
-            "pasta user dentro, o programa:\n"
-            "  - COPIA a pasta user e a pasta mods da build antiga para a build nova;\n"
-            "  - ao mesmo tempo, faz o backup da user antiga no Drive (só a user vai pro Drive, a mods não).\n"
-            "As pastas da build antiga continuam intactas (nada é movido nem apagado).\n"
-            "\n"
-            "ABA MODS\n"
-            "\n"
-            "Escolha a build (por padrão a mais nova) e gerencie os mods dela:\n"
-            "  - \"Adicionar pasta...\" / \"Adicionar .zip...\": um mod é uma pasta com uma pasta \"romfs\" dentro.\n"
-            "    Pode escolher um .zip (ou vários); o programa acha os mods lá dentro.\n"
-            "  - Duplo clique (ou \"Ligar/Desligar\") liga e desliga. \"Subir\"/\"Descer\" mudam a ordem:\n"
-            "    quando dois mods trocam o mesmo arquivo, vence o que está mais embaixo.\n"
-            "  - Nada muda de verdade até clicar em \"Salvar\" (ele renomeia as pastas e atualiza a\n"
-            "    tabela de tamanhos que os mods ligados precisam). \"Salvar e jogar\" salva e abre o jogo.\n"
-            "  - Feche o jogo antes de adicionar ou salvar mods.\n"
-            "Quando uma build nova é detectada, os mods são copiados e a tabela de tamanhos é refeita\n"
-            "para a build nova.\n"
-            "A aba Mods usa a lógica do mod loader do Link's Toolbox (por Cum_Dumpster).\n"
-            "\n"
-            "DICAS\n"
-            "\n"
-            "- O backup fica em: Meu Drive\\LongshotSaves\\user. O programa nunca apaga nada lá.\n"
-            "- Não existe backup automático: ele só acontece junto com a cópia.\n"
-            "- \"Copiar user agora\" faz a cópia (user e mods) e o backup na hora, entre as duas builds mais recentes.\n"
-            "- Se a cópia falhar (jogo ou launcher abertos), feche-os: o programa tenta de novo sozinho.\n"
-            "- Na primeira vez que você inicia, as builds que já existem são ignoradas; "
-            "só builds novas disparam a cópia.\n"
-            "- A música de fundo toca sempre enquanto o programa estiver aberto (volume fixo em 40%).\n"
-            "- Idioma: use os botões PT-BR / EN no canto superior direito."
-        ),
+        "help": HELP_PT,
     },
     "en": {
         "title": "Longshot Save Backup",
@@ -191,11 +148,11 @@ TR = {
         "copy_now": "Copy user now",
         "st_idle": "● Stopped",
         "st_wait": "● Waiting for a new build...",
-        "log_choose_drive": "Choose the Google Drive folder and click Start build detection.",
+        "log_choose_drive": "First use: choose the builds folder and the Google Drive folder (see the step by step on the Help tab) and click Start build detection.",
         "log_started": "Build detection started. (No automatic backup: only when copying the user folder.)",
         "log_stopped": "Build detection stopped.",
-        "log_no_builds": "The builds folder does not exist.",
-        "log_no_drive": "Choose the Google Drive folder (the one the Drive app syncs).",
+        "log_no_builds": "Choose the builds folder (the \"builds\" folder inside LongshotLauncher-data).",
+        "log_no_drive": "Choose the Google Drive folder (see the Help tab for how to create it).",
         "log_detected": "New build detected: {name}. Waiting for it to finish writing...",
         "log_new": "New build: {new} | old user: {old}",
         "log_no_old": "{name}: no older build with a user folder to copy.",
@@ -259,54 +216,7 @@ TR = {
         "st_py314": "the program was built with a Python older than 3.14, which that table needs.",
         "log_music_missing": "Background music not found (background.mp3).",
         "log_music_err": "Could not play the background music.",
-        "help": (
-            "HOW TO USE\n"
-            "\n"
-            "1) Install Google Drive for desktop and sign in to your Google account. "
-            "It creates a folder on your PC (e.g. G:\\My Drive) that syncs with your Drive. "
-            "The backup is saved there.\n"
-            "\n"
-            "2) On the Main tab, check the \"Builds folder\". Usually it is:\n"
-            "   D:\\LongShotGame\\LongshotLauncher-data\\builds\n"
-            "\n"
-            "3) In \"Google Drive folder\", choose the Drive folder on your PC. "
-            "The program tries to find it by itself; if it can't, click Browse.\n"
-            "\n"
-            "4) Click \"Start build detection\" and keep the program open (you can minimize it).\n"
-            "\n"
-            "WHAT HAPPENS\n"
-            "\n"
-            "When the game updates and creates a new build (e.g. nightly-179-70087604) with a "
-            "user folder inside, the program:\n"
-            "  - COPIES the user folder and the mods folder from the old build to the new build;\n"
-            "  - at the same time, backs the old user folder up to the Drive (only user goes to the Drive, not mods).\n"
-            "The old build's folders stay untouched (nothing is moved or deleted).\n"
-            "\n"
-            "MODS TAB\n"
-            "\n"
-            "Pick the build (the newest by default) and manage its mods:\n"
-            "  - \"Add folder...\" / \"Add .zip...\": a mod is a folder with a \"romfs\" folder inside.\n"
-            "    You can pick one or several .zip files; the program finds the mods inside.\n"
-            "  - Double-click (or \"Turn on/off\") switches a mod. \"Move up\"/\"Move down\" change the order:\n"
-            "    when two mods replace the same file, the lower one wins.\n"
-            "  - Nothing really changes until you click \"Save\" (it renames the folders and updates the\n"
-            "    size table the mods that are on need). \"Save and play\" saves and opens the game.\n"
-            "  - Close the game before adding or saving mods.\n"
-            "When a new build is detected, the mods are copied and the size table is rebuilt\n"
-            "for the new build.\n"
-            "The Mods tab uses the mod loader logic from Link's Toolbox (by Cum_Dumpster).\n"
-            "\n"
-            "TIPS\n"
-            "\n"
-            "- The backup lives in: My Drive\\LongshotSaves\\user. The program never deletes anything there.\n"
-            "- There is no automatic backup: it only happens together with the copy.\n"
-            "- \"Copy user now\" does the copy (user and mods) and the backup right away, between the two newest builds.\n"
-            "- If the copy fails (game or launcher open), close them: the program retries by itself.\n"
-            "- The first time you start it, builds that already exist are ignored; "
-            "only new builds trigger the copy.\n"
-            "- The background music always plays while the program is open (volume fixed at 40%).\n"
-            "- Language: use the PT-BR / EN buttons at the top right."
-        ),
+        "help": HELP_EN,
     },
 }
 
@@ -639,7 +549,7 @@ class App:
         self.tab_help_btn.set_active(name == "help")
 
     def apply_lang(self):
-        self.root.title(self.t("title"))
+        self.root.title(f'{self.t("title")} {APP_VERSION}')
         self.tab_main_btn.configure(text=self.t("tab_main"))
         self.tab_help_btn.configure(text=self.t("tab_help"))
         self.tab_mods_btn.configure(text=self.t("tab_mods"))

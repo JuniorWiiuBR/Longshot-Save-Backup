@@ -16,12 +16,12 @@ import threading
 import time
 import tkinter as tk
 
-from ui_common import (BG, CARD, CARD2, GOLD, FG, MUTED, LINE,
+from ui_common import (APP_VERSION, BG, CARD, CARD2, GOLD, FG, MUTED, LINE,
                        FlatButton, TriforceBackground, load_logo)
 
 APP_NAME = "Longshot Save Backup"
 APP_EXE = "LongshotSaveBackup.exe"
-VERSION = "3.0"
+VERSION = APP_VERSION
 SHORTCUT = "Longshot Save Backup.lnk"
 LOCAL = os.environ.get("LOCALAPPDATA", os.path.expanduser("~"))
 INSTALL_DIR = os.path.join(LOCAL, "Programs", "LongshotSaveBackup")
@@ -315,7 +315,7 @@ class Setup:
                               anchor="w", bd=0, highlightthickness=0)
 
     def render(self):
-        self.root.title(self.t("win_title_un" if self.uninstall else "win_title"))
+        self.root.title(self.t("win_title_un" if self.uninstall else "win_title") + f" {VERSION}")
         self.lang_pt.set_active(self.lang == "pt")
         self.lang_en.set_active(self.lang == "en")
         for w in self.card.winfo_children():

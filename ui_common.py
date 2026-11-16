@@ -7,6 +7,8 @@ import math
 import random
 import tkinter as tk
 
+APP_VERSION = "3.0.1"
+
 BG = "#0c0e1d"
 CARD = "#161a30"
 CARD2 = "#20254a"
