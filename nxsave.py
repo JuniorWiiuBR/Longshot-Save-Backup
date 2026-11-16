@@ -24,7 +24,7 @@ try:
 except ImportError:                      # pragma: no cover
     zstd = None
 
-VERSION = '1.1.7'        # Link's Toolbox version (the updater compares it with the newest GitHub release)
+VERSION = '1.1.8'        # Link's Toolbox version (the updater compares it with the newest GitHub release)
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 MAGIC = 0x01020304
