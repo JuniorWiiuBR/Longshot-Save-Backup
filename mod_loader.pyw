@@ -142,6 +142,60 @@ def mod_folders(src):
     return sorted(p for p in src.iterdir() if p.is_dir() and (p / 'romfs').is_dir()) if src.is_dir() else []
 
 
+BUNDLED_LIST = 'bundled.txt'    # (written by make_share_zip: the names of the download's own mods, one a line)
+
+
+def bundled_mods(folder=None):
+    """The mods that came with the toolbox, one per mod: an update copies the new folders in but leaves the old ones
+    (renumbered mods, like 04-Biggoron One-Handed now 05-Biggoron One-Handed). The download's bundled.txt says which
+    are the current ones; without it (1.2.0 and older), the newest copy of each mod."""
+    folder = Path(folder or BUNDLED)
+    found = [p for p in mod_folders(folder) if not p.name.startswith('~')]
+    listed = folder / BUNDLED_LIST
+    try:
+        names = [n.strip() for n in listed.read_text(encoding='utf-8').splitlines() if n.strip()]
+    except OSError:
+        names = None
+    if names:
+        current = [p for p in found if p.name in names]
+        if current:
+            return current
+    newest = {}
+    for p in found:
+        key = plain(p.name).lower()
+        stamp = max((f.stat().st_mtime for f in p.rglob('*') if f.is_file()), default=0)
+        if key not in newest or stamp > newest[key][0]:
+            newest[key] = (stamp, p)
+    return sorted((p for _s, p in newest.values()), key=lambda p: p.name)
+
+
+def tidy_bundled(folder=None):
+    """Removes the old copies an update left in the toolbox's own mods folder (the same mod under an old name). Only
+    there, only folders with romfs in them, and only a mod that has a current copy. Returns the names removed."""
+    import shutil
+    folder = Path(folder or BUNDLED)
+    if not folder.is_dir() or nxsave.is_link(folder) or not (folder / BUNDLED_LIST).is_file():
+        return []
+    try:                               # (never a game's own mods folder)
+        games = {nxsave.mods_dir_for(p).resolve() for _a, p in nxsave.all_game_dirs()}
+    except Exception:
+        games = set()
+    if folder.resolve() in games:
+        return []
+    keep = bundled_mods(folder)
+    current = {plain(p.name).lower() for p in keep}
+    gone = []
+    for p in mod_folders(folder):
+        if p in keep or p.name.startswith('~') or plain(p.name).lower() not in current or nxsave.is_link(p):
+            continue
+        try:
+            shutil.rmtree(p)
+            gone.append(p.name)
+        except OSError:
+            pass
+    return gone
+
+
 def install(folders, replace):
     """Copies mod folders into the mods folder. replace(name) says whether to overwrite a mod already there (the same
     name without its NN- / _ prefix). Returns (added, replaced, skipped) names."""
@@ -364,7 +418,11 @@ class App(ttk.Frame):
             return
         if self.dirty and not messagebox.askyesno('Add mods', 'Forget the changes you have not saved?', parent=self):
             return
-        bundled = [p for p in mod_folders(BUNDLED) if not p.name.startswith('~')]
+        try:
+            tidy_bundled()
+        except Exception:
+            pass
+        bundled = bundled_mods()
         src = None
         if bundled:
             answer = messagebox.askyesnocancel(
@@ -381,7 +439,8 @@ class App(ttk.Frame):
             if not path:
                 return
             src = Path(path)
-        folders = mod_folders(src)
+        folders = (bundled + [p for p in mod_folders(BUNDLED) if p.name.startswith('~')] if src == BUNDLED
+                   else mod_folders(src))
         if not folders:
             messagebox.showinfo('Add mods', f'{src}\n\nhas no mods in it: a mod is a folder with a "romfs" folder '
                                 'inside.', parent=self)

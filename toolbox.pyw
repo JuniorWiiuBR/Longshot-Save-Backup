@@ -922,6 +922,11 @@ def main():
         except Exception:
             pass
     load_tools()
+    if '--selftest' not in sys.argv:  # (old copies of the toolbox's own mods an update left behind)
+        try:
+            mod_loader.tidy_bundled()
+        except Exception:
+            pass
     box = Toolbox(root)
     if '--selftest' not in sys.argv and nxsave.load_settings().get('check_updates', True) is True:
         root.after(1500, lambda: box.check_updates(quiet=True))    # (quiet: no message when offline)

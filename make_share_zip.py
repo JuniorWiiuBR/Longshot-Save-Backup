@@ -63,6 +63,7 @@ Needs Windows 10 or 11.
 '''
 
 
+BUNDLED_LIST = 'bundled.txt'    # in the download's mods folder: the names of its mods, one a line
 # The download always ships these the same way, whatever is on or off in my own mods folder right now:
 SHIP_ON = ('Biggoron One-Handed',)               # (the default way to hold the Biggoron Sword)
 SHIP_OFF = ('Young Link Two-Handed Swords',)     # (replaces the same file as Biggoron One-Handed: one or the other)
@@ -150,10 +151,12 @@ def build_linux():
             if (HERE / name).is_file():
                 file(tar, HERE / name, 'app/' + name)
         if '--no-mods' not in sys.argv:
-            for mod, as_name in share_mods():
+            shipped = share_mods()
+            for mod, as_name in shipped:
                 for p in sorted(mod.rglob('*')):
                     if p.is_file():
                         file(tar, p, 'mods/' + as_name + '/' + p.relative_to(mod).as_posix())
+            text(tar, 'mods/' + BUNDLED_LIST, '\n'.join(n for _m, n in shipped) + '\n')
     tmp.replace(LINUX_OUT)
     print(f'{LINUX_OUT}  {LINUX_OUT.stat().st_size / 1e6:.1f} MB')
 
@@ -189,6 +192,8 @@ def main():
                     if p.is_file():
                         z.write(p, root + 'mods/' + as_name + '/' + p.relative_to(mod).as_posix(),
                                 compress_type=zipfile.ZIP_STORED if p.suffix == '.zs' else zipfile.ZIP_DEFLATED)
+            # the list of the download's own mods: an updated copy removes bundled folders that are not on it
+            z.writestr(root + 'mods/' + BUNDLED_LIST, '\r\n'.join(n for _m, n in shared) + '\r\n')
             print('mods:', ', '.join(n for _m, n in shared) or 'none')
         n = 0
         for p in sorted(PYTHON.rglob('*')):
