@@ -123,18 +123,33 @@ def install(target, desk=True, menu=True, reg=True, links=True):
     return made
 
 
-def uninstall(yes=False):
+def is_installed_copy():
+    """True when this copy is the installed one (its Apps entry points here)."""
+    found = installed()
+    return bool(found) and os.path.normcase(str(found[0].resolve())) == os.path.normcase(str(SOURCE.resolve()))
+
+
+def uninstall(yes=False, parent=None):
+    """Asks (unless yes), then removes the shortcuts, the Apps entry and the files; the files go once every toolbox
+    window running from them has closed. parent: the toolbox's window (the Updates tab's Uninstall button), which
+    must close right after this returns True."""
     found = installed()
     target, links = found if found else (SOURCE, [])
-    root = tk.Tk()
-    root.withdraw()
-    if not yes and not messagebox.askyesno(NAME, f'Uninstall {NAME} from\n{target}?', parent=root):
-        return
+    root = parent
+    if root is None:
+        root = tk.Tk()
+        root.withdraw()
+    if not yes and not messagebox.askyesno(
+            f'Uninstall {NAME}', f'Uninstall the {NAME} app?\n\nThis removes only the toolbox app:\n  {target}\n  its '
+            'Start menu and Desktop shortcuts\n  its entry in Windows Settings > Apps\n\nThe game, your game saves '
+            'and your mods are NOT touched.', icon='warning', parent=root):
+        return False
     keep = True if yes else messagebox.askyesnocancel(
-        NAME, 'Keep your save backups and toolbox settings (in the app folder)?\n\nYes: keep them.   No: delete them '
-        'too.\n\n(Your game saves are not in the toolbox folder: they stay either way.)', parent=root)
+        f'Uninstall {NAME}', "Keep the toolbox's save backups and its settings (in its app folder)?\n\nYes: keep "
+        'them.   No: delete them too.\n\n(These are only the copies the toolbox made. Your real game saves are in '
+        'the game\'s own folder and stay either way.)', parent=root)
     if keep is None:
-        return
+        return False
     for lnk in links + [str(start_menu()), str(desktop())]:
         try:
             p = Path(lnk)
@@ -155,11 +170,22 @@ def uninstall(yes=False):
                  f'rd /s /q "{t}\\app\\__pycache__"')
     else:
         steps = f'rd /s /q "{t}"'
-    subprocess.Popen(f'cmd /c "timeout /t 2 /nobreak >nul & {steps}"', creationflags=NOWIN)
+    # (waits for this program to close: its Python is in the folder being removed)
+    script = Path(os.environ.get('TEMP', str(Path.home()))) / f'link-toolbox-uninstall-{os.getpid()}.bat'
+    script.write_text('@echo off\r\n:wait\r\n'
+                      f'tasklist /FI "PID eq {os.getpid()}" 2>nul | find "{os.getpid()}" >nul && '
+                      '(timeout /t 1 /nobreak >nul & goto wait)\r\n'
+                      f'timeout /t 1 /nobreak >nul\r\n{steps.replace(" & ", chr(13) + chr(10))}\r\n'
+                      'del "%~f0"\r\n', encoding='mbcs')
+    subprocess.Popen(['cmd', '/c', str(script)], creationflags=NOWIN)
     if not yes:
-        messagebox.showinfo(NAME, f'{NAME} is uninstalled.' + (f'\n\nKept: {t}\\app\\backups and the settings.'
-                                                               if keep else ''), parent=root)
-    root.destroy()
+        messagebox.showinfo(f'Uninstall {NAME}', f'The {NAME} app is uninstalled. The game and your saves are '
+                            'untouched.' + (f'\n\nKept: {t}\\app\\backups and the settings.'
+                                                               if keep else '') +
+                            ('\n\nThe toolbox closes now.' if parent is not None else ''), parent=root)
+    if parent is None:
+        root.destroy()
+    return True
 
 
 def window():

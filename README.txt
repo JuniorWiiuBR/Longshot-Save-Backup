@@ -22,13 +22,19 @@ itself. It only touches your mods folder and your save files.
  GETTING STARTED
 -------------------------------------------------------------------------------
 
-  1. Unzip the "Link Toolbox" folder anywhere (Desktop, Documents, ...).
+PORTABLE (nothing installed):
+  1. Unzip the "Link Toolbox" folder anywhere (Desktop, Documents, a USB
+     stick...).
   2. Double-click  Link Toolbox.bat
+  To remove the portable copy, delete its folder.
 
-To INSTALL it instead (Windows): double-click  Install Link Toolbox.bat
+INSTALLED APP (Windows): double-click  Install Link Toolbox.bat
   It goes to %LOCALAPPDATA%\Programs\Link Toolbox (no admin needed), with
-  Start menu and Desktop shortcuts, and an entry in Windows Settings > Apps
-  to uninstall it. Running it again over an installed copy upgrades it.
+  Start menu and Desktop shortcuts, and an entry in Windows Settings > Apps.
+  Running it again over an installed copy upgrades it.
+  To uninstall the app: Updates tab > "Uninstall Link's Toolbox (this app)",
+  or Windows Settings > Apps. It removes only the toolbox app (it asks
+  first): the game, your game saves and your mods are not touched.
 
 UPDATES: the Updates tab checks GitHub for a newer version (when the
 toolbox opens, unless you turn that off). It only tells you: nothing

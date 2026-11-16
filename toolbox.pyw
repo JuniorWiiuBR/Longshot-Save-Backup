@@ -163,7 +163,16 @@ class Toolbox:
         import queue
         tab = ttk.Frame(self.book, padding=16)
         tab.columnconfigure(0, weight=1)
-        ttk.Label(tab, text=f"Link's Toolbox {nxsave.VERSION}", font=(theme.FAMILY, 12, 'bold')).grid(
+        kind = 'development copy'
+        if os.name == 'nt' and not (updater.APP / '.git').exists():
+            try:
+                import install
+                kind = 'installed app' if install.is_installed_copy() else 'portable'
+            except Exception:
+                kind = 'portable'
+        elif os.name != 'nt':
+            kind = 'Linux'
+        ttk.Label(tab, text=f"Link's Toolbox {nxsave.VERSION}   ({kind})", font=(theme.FAMILY, 12, 'bold')).grid(
             row=0, column=0, sticky='w')
         self.update_status = ttk.Label(tab, text='Not checked yet.', foreground=theme.SOFT, wraplength=900,
                                        justify='left')
@@ -196,6 +205,24 @@ class Toolbox:
                   'the new version in and opens it again. Your settings, backups, names lists and icon are kept.',
                   foreground=theme.MUTED, wraplength=900, justify='left').grid(row=7, column=0, sticky='w',
                                                                                pady=(10, 0))
+        # uninstalling (an installed copy only: the one Install Link Toolbox.bat put in place)
+        row = ttk.Frame(tab)
+        row.grid(row=8, column=0, sticky='w', pady=(14, 0))
+        mine = False
+        if os.name == 'nt':
+            try:
+                import install
+                mine = install.is_installed_copy()
+            except Exception:
+                pass
+        ttk.Button(row, text="Uninstall Link's Toolbox (this app)...", command=self.uninstall,
+                   state='normal' if mine else 'disabled').pack(side='left')
+        ttk.Label(row, text=("Removes only the Link's Toolbox app: its folder, shortcuts and Windows Settings > Apps "
+                             'entry. The game, your game saves and your mods are not touched. It asks first.')
+                  if mine else "This is the portable Link's Toolbox (run from its folder, not installed), so there's "
+                  'nothing to uninstall: to remove it, delete its folder. (Uninstalling is for the installed app, set '
+                  'up with Install Link Toolbox.bat.) The game is never touched.',
+                  foreground=theme.MUTED, wraplength=640, justify='left').pack(side='left', padx=(10, 0))
         self.newest = {}
         self.update_q = queue.Queue()
         self.root.after(200, self.poll_updates)
@@ -249,6 +276,14 @@ class Toolbox:
         else:
             self.update_status['text'] = f"You have the newest version ({nxsave.VERSION})."
         self.update_btn['state'] = 'normal' if newer and not updater.can_update() else 'disabled'
+
+    def uninstall(self):
+        """Asks twice (uninstall? keep backups and settings?), then the toolbox closes and is removed."""
+        if not (self.mods.may_close() and self.saves.may_close()):
+            return
+        import install
+        if install.uninstall(parent=self.root):
+            self.root.destroy()        # (the uninstall script waits for this window to close)
 
     def update_now(self):
         rel = self.newest
