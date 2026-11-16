@@ -253,7 +253,30 @@ GAME_EXES = tuple(exe for _app, exe in APPS)
 def apps_in(game):
     """The apps whose program is in a game folder, in the order above."""
     game = Path(game)
-    return [app for app, exe in APPS if (game / exe).is_file()]
+    return [app for app, exe in APPS if program(game, exe)]
+
+
+WINDOWS = os.name == 'nt'
+HOME = Path.home()
+
+
+def program(game, exe):
+    """A game program in a folder: 'longshot.exe' on Windows; on Linux also 'longshot' (no .exe, a native build)."""
+    for name in (exe,) if WINDOWS else (exe[:-4] if exe.endswith('.exe') else exe, exe):
+        p = Path(game) / name
+        if p.is_file():
+            return p
+    return None
+
+
+def open_folder(path):
+    """Shows a folder in the file manager (Explorer on Windows, the desktop's own on Linux)."""
+    import subprocess
+    Path(path).mkdir(parents=True, exist_ok=True)
+    if WINDOWS:
+        os.startfile(path)
+    else:
+        subprocess.Popen(['xdg-open', str(path)])
 
 
 def app_of(game=None):
@@ -271,7 +294,7 @@ def game_exe(game=None):
     """The program that starts the game (the app's: Triforce.exe, longshot.exe or ocarina.exe), None when none."""
     game = Path(game or game_dir())
     exe = dict(APPS).get(app_of(game))
-    return game / exe if exe else None
+    return program(game, exe) if exe else None
 
 
 def is_longshot(game=None):
@@ -282,17 +305,24 @@ def game_running():
     """The name of the game's program when it is running, else ''."""
     import subprocess
     try:
-        out = subprocess.run(['tasklist', '/NH'], capture_output=True, text=True,
-                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)).stdout.lower()
+        if WINDOWS:
+            out = subprocess.run(['tasklist', '/NH'], capture_output=True, text=True,
+                                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)).stdout.lower()
+        else:     # (Linux: the programs by name, with or without .exe: native, or Windows ones through Wine/Proton)
+            out = subprocess.run(['ps', '-A', '-o', 'args='], capture_output=True, text=True).stdout.lower()
     except OSError:
         return ''
-    return next((n for n in GAME_PROCESSES if n.lower() in out), '')
+    for n in GAME_PROCESSES:
+        stem = n.lower()[:-4] if n.lower().endswith('.exe') else n.lower()
+        if n.lower() in out or (not WINDOWS and re.search(rf'(^|/){re.escape(stem)}(\s|$)', out, re.M)):
+            return n
+    return ''
 
 
 def is_game_dir(d):
     """The game's folder: the one with Triforce.exe (or Longshot's longshot.exe) and the game's files (romfs)."""
     d = Path(d)
-    return d.is_dir() and (any((d / n).is_file() for n in GAME_EXES) or (d / 'romfs').is_dir())
+    return d.is_dir() and (any(program(d, n) for n in GAME_EXES) or (d / 'romfs').is_dir())
 
 
 def _game_dir_candidates():
@@ -303,20 +333,25 @@ def _game_dir_candidates():
         pass
     yield ROOT / 'game'                                     # the toolbox inside the NX2navi folder
     local = os.environ.get('LOCALAPPDATA', '')
-    try:                                                    # Triforce's installer logs where it put the game
-        log = Path(local, 'Programs', 'Triforce', 'setup.log').read_text(encoding='utf-8', errors='replace')
-        found = re.findall(r'GameFolder=\[([^\]]+)\]', log)
-        if found:
-            yield found[-1]
-    except OSError:
-        pass
-    yield Path(local, 'Programs', 'NX2navi', 'game')
-    # Longshot: its launcher builds the game in Games\Longshot (or a folder in it, one per version)
-    longshot = Path(os.environ.get('USERPROFILE', '~')).expanduser() / 'Games' / 'Longshot'
-    yield longshot
-    if longshot.is_dir():
-        yield from sorted((p for p in longshot.iterdir() if (p / 'longshot.exe').is_file()),
-                          key=lambda p: p.stat().st_mtime, reverse=True)
+    if local:                                               # (Windows)
+        try:                                                # Triforce's installer logs where it put the game
+            log = Path(local, 'Programs', 'Triforce', 'setup.log').read_text(encoding='utf-8', errors='replace')
+            found = re.findall(r'GameFolder=\[([^\]]+)\]', log)
+            if found:
+                yield found[-1]
+        except OSError:
+            pass
+        yield Path(local, 'Programs', 'NX2navi', 'game')
+    # Longshot: its launcher builds the game in Games\Longshot in the home folder (or a folder in it, one per version);
+    # on Linux also where it keeps its data
+    homes = [HOME / 'Games' / 'Longshot']
+    if not WINDOWS:
+        homes += [HOME / '.local' / 'share' / 'longshot', HOME / 'Games' / 'longshot']
+    for longshot in homes:
+        yield longshot
+        if longshot.is_dir():
+            yield from sorted((p for p in longshot.iterdir() if program(p, 'longshot.exe')),
+                              key=lambda p: p.stat().st_mtime, reverse=True)
     yield from remembered('games')     # game folders typed in the Folders tab and kept
 
 
@@ -425,7 +460,8 @@ def save_bases(game, app):
     game = Path(game)
     bases = [game.joinpath(*parts) for parts in SAVE_BASES]
     if app == 'Longshot':     # Longshot started from its launcher keeps the saves in %APPDATA%\Longshot\save
-        bases.insert(0, Path(os.environ.get('APPDATA', ''), 'Longshot', 'save'))
+        bases.insert(0, Path(os.environ['APPDATA'], 'Longshot', 'save') if WINDOWS and os.environ.get('APPDATA')
+                     else HOME / '.local' / 'share' / 'longshot' / 'save')     # (Linux)
     elif app == 'NX2navi':    # NX2navi's own saves: profile/save (Triforce moved its copies to user/save)
         bases.reverse()
     return bases
@@ -457,7 +493,7 @@ def all_mod_locations():
     for app, game in all_game_dirs():
         exe = dict(APPS).get(app)
         label = f'{app} ({Path(game).name})' if is_remembered('games', game) else app
-        add(label, Path(game) / 'mods', Path(game) / exe if exe else None)
+        add(label, Path(game) / 'mods', program(game, exe) if exe else None)
     for label, d in [('Folders tab', load_settings().get('mods_dir'))] + [('Kept', p) for p in remembered('mods')]:
         if d and Path(d).is_dir():
             add(label, d, game_exe(Path(d).parent) if is_game_dir(Path(d).parent) else None)

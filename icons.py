@@ -302,8 +302,17 @@ def ensure():
 
 
 # ------------------------------------------------------------------------------------------------- shortcuts
+WINDOWS = os.name == 'nt'
+if not WINDOWS:
+    SHORTCUT_NAME = 'Link Toolbox.desktop'      # (Linux: a desktop launcher instead of a .lnk)
+
+
 def launcher():
-    """(program, arguments, folder) that start the toolbox: the Python next to it, without a console window."""
+    """(program, arguments, folder) that start the toolbox: the Python next to it, without a console window
+    (Windows); on Linux the Python running now."""
+    import sys
+    if not WINDOWS:
+        return Path(sys.executable), f'"{HERE / "toolbox.pyw"}"', HERE
     root = HERE.parent
     for py in (root / 'python' / 'pythonw.exe', root.parent / 'python' / 'pythonw.exe'):
         if py.is_file():
@@ -311,23 +320,35 @@ def launcher():
     return Path('pythonw.exe'), f'"{HERE / "toolbox.pyw"}"', HERE
 
 
-def shortcuts():
-    """Where the shortcuts go: next to the .bat (the toolbox's own folder), and on the Desktop."""
-    desktop = Path(os.environ.get('USERPROFILE', '~')).expanduser() / 'Desktop'
-    try:   # (the Desktop folder may be moved, for example into OneDrive)
-        out = subprocess.run(['powershell', '-NoProfile', '-Command', "[Environment]::GetFolderPath('Desktop')"],
-                             capture_output=True, text=True, timeout=15,
-                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)).stdout.strip()
-        if out:
-            desktop = Path(out)
+def desktop_folder():
+    if WINDOWS:
+        desktop = Path(os.environ.get('USERPROFILE', '~')).expanduser() / 'Desktop'
+        try:   # (the Desktop folder may be moved, for example into OneDrive)
+            out = subprocess.run(['powershell', '-NoProfile', '-Command', "[Environment]::GetFolderPath('Desktop')"],
+                                 capture_output=True, text=True, timeout=15,
+                                 creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)).stdout.strip()
+            return Path(out) if out else desktop
+        except (OSError, subprocess.SubprocessError):
+            return desktop
+    try:       # (Linux: the desktop's own name for it, for example in another language)
+        out = subprocess.run(['xdg-user-dir', 'DESKTOP'], capture_output=True, text=True, timeout=10).stdout.strip()
+        return Path(out) if out else Path.home() / 'Desktop'
     except (OSError, subprocess.SubprocessError):
-        pass
-    return [bat_folder() / SHORTCUT_NAME, desktop / SHORTCUT_NAME]
+        return Path.home() / 'Desktop'
+
+
+def shortcuts():
+    """Where the shortcuts go: next to the .bat / .sh (the toolbox's own folder), and on the Desktop (Linux: also in
+    the app menu)."""
+    out = [bat_folder() / SHORTCUT_NAME, desktop_folder() / SHORTCUT_NAME]
+    if not WINDOWS:
+        out.append(Path.home() / '.local' / 'share' / 'applications' / 'link-toolbox.desktop')
+    return out
 
 
 def bat_folder():
-    """The folder with Link Toolbox.bat: this one (the toolbox inside NX2navi) or the one above (the shared zip)."""
-    return HERE if (HERE / 'Link Toolbox.bat').is_file() else HERE.parent
+    """The folder with Link Toolbox.bat (or .sh): this one (the toolbox inside NX2navi) or the one above (the zip)."""
+    return HERE if any((HERE / n).is_file() for n in ('Link Toolbox.bat', 'Link Toolbox.sh')) else HERE.parent
 
 
 def first_run():
@@ -340,9 +361,20 @@ def first_run():
 
 
 def make_shortcut(path):
-    """A Windows shortcut that starts the toolbox, with its icon. Returns True when it was made."""
+    """A shortcut that starts the toolbox, with its icon (Windows: a .lnk; Linux: a .desktop launcher). True when made."""
     ensure()
     program, args, folder = launcher()
+    if not WINDOWS:
+        try:
+            Path(path).parent.mkdir(parents=True, exist_ok=True)
+            Path(path).write_text('[Desktop Entry]\nType=Application\nName=Link Toolbox\n'
+                                  "Comment=Link's Toolbox - mod loader and save editor\n"
+                                  f'Exec="{program}" {args}\nPath={folder}\nIcon={PNG}\nTerminal=false\n'
+                                  'Categories=Game;Utility;\n', encoding='utf-8')
+            os.chmod(path, 0o755)
+            return True
+        except OSError:
+            return False
     q = lambda s: str(s).replace("'", "''")
     ps = (f"$s=(New-Object -ComObject WScript.Shell).CreateShortcut('{q(path)}'); $s.TargetPath='{q(program)}'; "
           f"$s.Arguments='{q(args)}'; $s.WorkingDirectory='{q(folder)}'; $s.IconLocation='{q(ICO)},0'; "
@@ -360,6 +392,11 @@ def apply(root):
     """The icon on a Tk window (and every window it opens): title bar and taskbar."""
     try:
         ensure()
-        root.iconbitmap(default=str(ICO))
+        if WINDOWS:
+            root.iconbitmap(default=str(ICO))
+        else:          # (Linux: Tk takes a picture, not an .ico)
+            import tkinter as tk
+            root._icon_photo = tk.PhotoImage(master=root, file=str(PNG))
+            root.iconphoto(True, root._icon_photo)
     except Exception:
         pass

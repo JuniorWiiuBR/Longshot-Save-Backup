@@ -60,12 +60,9 @@ def plain(folder):
 
 
 def running():
-    try:
-        out = subprocess.run(['tasklist', '/NH'], capture_output=True, text=True,
-                             creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0)).stdout.lower()
-    except OSError:
-        return []
-    return [n for n in RUNNING if n.lower() in out]
+    """The game programs running now (Windows and Linux)."""
+    name = nxsave.game_running()
+    return [name] if name else []
 
 
 class Mod:
@@ -195,7 +192,7 @@ class App(ttk.Frame):
         self.game_rows = []
         self.where = ttk.Label(top, text=f'Mods in {MODS}', foreground=theme.SOFT)
         self.where.pack(side='left')
-        ttk.Button(top, text='Open folder', command=lambda: os.startfile(MODS)).pack(side='right')
+        ttk.Button(top, text='Open folder', command=lambda: nxsave.open_folder(MODS)).pack(side='right')
         ttk.Button(top, text='Refresh', command=self.reload).pack(side='right', padx=(0, 6))
         ttk.Button(top, text='Add mods...', command=self.add_mods).pack(side='right', padx=(0, 6))
 
@@ -261,8 +258,8 @@ class App(ttk.Frame):
         now = nxsave.app_of()
         apps = label.split(' / ')
         game = d.parent
-        GAME_EXE = (game / dict(nxsave.APPS)[now]) if now in apps and (game / dict(nxsave.APPS)[now]).is_file() \
-            else exe or GAME_EXE
+        mine = nxsave.program(game, dict(nxsave.APPS)[now]) if now in apps else None
+        GAME_EXE = mine or exe or GAME_EXE
         self.dirty = False
         self.reload()
         self.status['text'] += f'   -   {label}: Save and play starts {GAME_EXE.name}'

@@ -67,7 +67,7 @@ class Toolbox:
         root.minsize(760, 440)
         self.titles = {}
         ttk.Label(root, text=f"Link's Tools  ·  by {CREDIT}", foreground=theme.FAINT,
-                  font=('Segoe UI', 8, 'italic')).pack(side='bottom', anchor='e', padx=10, pady=(0, 4))
+                  font=(theme.FAMILY, 8, 'italic')).pack(side='bottom', anchor='e', padx=10, pady=(0, 4))
         self.book = ttk.Notebook(root)
         self.book.pack(fill='both', expand=True, padx=6, pady=6)
         self.mods = mod_loader.App(self.book, on_title=lambda t: self.set_title('mods', t), after_play=self.after_play)
@@ -101,7 +101,7 @@ class Toolbox:
                 ('Saves folder', self.save_var, nxsave.game_dir() / 'user' / 'save',
                  "A save's own folder (the one with slot_01, slot_02...), or a folder of those: the latest is used."))
         # every game folder found (Triforce, Longshot...): pick one to use it, its mods and its saves
-        ttk.Label(tab, text='Games found', font=('Segoe UI', 10, 'bold')).grid(row=0, column=0, sticky='w')
+        ttk.Label(tab, text='Games found', font=(theme.FAMILY, 10, 'bold')).grid(row=0, column=0, sticky='w')
         self.found_var = tk.StringVar()
         box = self.found_box = ttk.Combobox(tab, textvariable=self.found_var, state='readonly')
         box.grid(row=0, column=1, columnspan=2, sticky='ew', padx=8)
@@ -122,7 +122,7 @@ class Toolbox:
         ttk.Separator(tab).grid(row=2, column=0, columnspan=4, sticky='ew', pady=(12, 0))
         r = 3
         for label, var, default, hint in rows:
-            ttk.Label(tab, text=label, font=('Segoe UI', 10, 'bold')).grid(row=r, column=0, sticky='w', pady=(10, 0))
+            ttk.Label(tab, text=label, font=(theme.FAMILY, 10, 'bold')).grid(row=r, column=0, sticky='w', pady=(10, 0))
             ttk.Entry(tab, textvariable=var).grid(row=r, column=1, sticky='ew', padx=8, pady=(10, 0))
             ttk.Button(tab, text='Browse...', command=lambda v=var, d=default: self.browse(v, d)).grid(
                 row=r, column=2, pady=(10, 0))

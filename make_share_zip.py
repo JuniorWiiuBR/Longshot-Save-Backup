@@ -8,6 +8,9 @@
                              --no-mods leaves them out
         python\\              the Python NX2navi ships, without its site-packages (the toolbox does not use them)
 
+With --linux it makes share\\Link Toolbox (Linux).tar.gz instead: the same scripts and mods, Link Toolbox.sh to start
+it (with the system's Python 3.14+ and Tk), and no Python inside.
+
 Run:  python\\python.exe save-editor\\make_share_zip.py                  (inside the NX2navi folder)
       python make_share_zip.py --python "C:\\path\\to\\python314"       (anywhere else)
 """
@@ -68,8 +71,76 @@ def share_mods():
                   and (p / 'romfs').is_dir()) if mods.is_dir() else []
 
 
+LINUX_OUT = HERE / 'share' / 'Link Toolbox (Linux).tar.gz'
+SH = '''#!/bin/sh
+# Opens Link's Toolbox (mod loader and save editor) with this computer's Python: 3.14 or newer, with Tk.
+cd "$(dirname "$0")" || exit 1
+for py in python3.14 python3.15 python3.16 python3.17 python3 python; do
+  if command -v "$py" >/dev/null 2>&1 && \\
+     "$py" -c 'import sys, tkinter, compression.zstd; sys.exit(sys.version_info < (3, 14))' 2>/dev/null; then
+    exec "$py" app/toolbox.pyw "$@"
+  fi
+done
+msg="Link's Toolbox needs Python 3.14 or newer, with Tk.
+
+Install them, then open Link Toolbox.sh again. For example:
+  Ubuntu / Debian:  sudo apt install python3 python3-tk
+  Fedora:           sudo dnf install python3 python3-tkinter
+  Arch / SteamOS:   sudo pacman -S python tk
+(Python 3.14 is needed: older systems may need a newer Python first.)"
+if command -v zenity >/dev/null 2>&1; then zenity --error --title="Link's Toolbox" --text="$msg"
+elif command -v kdialog >/dev/null 2>&1; then kdialog --title "Link's Toolbox" --error "$msg"
+else printf '%s\\n' "$msg" >&2; fi
+exit 1
+'''
+
+
+def build_linux():
+    """share\\Link Toolbox (Linux).tar.gz: the scripts, the mods and Link Toolbox.sh (runnable), no Python inside."""
+    import io
+    import tarfile
+    import time
+    LINUX_OUT.parent.mkdir(exist_ok=True)
+    tmp = LINUX_OUT.with_name(LINUX_OUT.name + '.part')
+    root = 'Link Toolbox/'
+    now = time.time()
+
+    def text(tar, name, body, mode=0o644):
+        data = body.replace('\r\n', '\n').encode('utf-8')
+        info = tarfile.TarInfo(root + name)
+        info.size, info.mode, info.mtime = len(data), mode, now
+        tar.addfile(info, io.BytesIO(data))
+
+    def file(tar, src, name):
+        info = tar.gettarinfo(str(src), root + name)
+        info.mode, info.uid, info.gid, info.uname, info.gname = 0o644, 0, 0, '', ''
+        with open(src, 'rb') as f:
+            tar.addfile(info, f)
+    with tarfile.open(tmp, 'w:gz', compresslevel=9) as tar:
+        text(tar, 'Link Toolbox.sh', SH, 0o755)
+        readme = (HERE / 'README.txt').read_text(encoding='utf-8') if (HERE / 'README.txt').is_file() else README
+        text(tar, 'README.txt', readme)
+        if (HERE / 'LICENSE').is_file():
+            text(tar, 'LICENSE.txt', (HERE / 'LICENSE').read_text(encoding='utf-8'))
+        for name in APP:
+            text(tar, 'app/' + name, (HERE / name).read_text(encoding='utf-8'))
+        for name in OPTIONAL:
+            if (HERE / name).is_file():
+                file(tar, HERE / name, 'app/' + name)
+        if '--no-mods' not in sys.argv:
+            for mod in share_mods():
+                for p in sorted(mod.rglob('*')):
+                    if p.is_file():
+                        file(tar, p, 'mods/' + mod.name + '/' + p.relative_to(mod).as_posix())
+    tmp.replace(LINUX_OUT)
+    print(f'{LINUX_OUT}  {LINUX_OUT.stat().st_size / 1e6:.1f} MB')
+
+
 def main():
     global PYTHON
+    if '--linux' in sys.argv:        # the Linux download instead (no Python inside: it uses the system's)
+        build_linux()
+        return
     if '--python' in sys.argv:       # another Python 3.14 folder (with tkinter) to put in the zip
         PYTHON = Path(sys.argv[sys.argv.index('--python') + 1])
     if not (PYTHON / 'pythonw.exe').is_file():

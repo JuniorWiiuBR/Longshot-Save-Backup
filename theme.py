@@ -5,6 +5,7 @@ bar on Windows 10/11.
     theme.MUTED, theme.ERROR, ...           # the colours for text that is not the main text
 """
 import ctypes
+import os
 import tkinter as tk
 from tkinter import ttk
 
@@ -22,7 +23,8 @@ FAINT = '#5f7468'       # the watermark
 GOLD = '#e4c783'        # the accent: headings, the picked tab
 WARN = '#e8c46a'
 ERROR = '#ff8f7a'       # edited, clashes, mistakes
-FONT = ('Segoe UI', 9)
+FAMILY = 'Segoe UI' if os.name == 'nt' else 'DejaVu Sans'     # (Linux: a font most desktops have)
+FONT = (FAMILY, 9)
 
 
 # each tab's own colour
@@ -150,7 +152,7 @@ def apply(root, reload=True):
     s.configure('TFrame', background=BG)
     s.configure('TLabel', background=BG, foreground=TEXT)
     s.configure('TLabelframe', background=BG, bordercolor=BORDER, relief='solid', borderwidth=1)
-    s.configure('TLabelframe.Label', background=BG, foreground=GOLD, font=('Segoe UI', 9, 'bold'))
+    s.configure('TLabelframe.Label', background=BG, foreground=GOLD, font=(FAMILY, 9, 'bold'))
     s.configure('TButton', background=PANEL, foreground=TEXT, bordercolor=BORDER, padding=(10, 3),
                 lightcolor=PANEL, darkcolor=PANEL, focusthickness=1)
     s.map('TButton', background=[('disabled', BG), ('pressed', SELECT), ('active', HOVER)],
@@ -178,7 +180,7 @@ def apply(root, reload=True):
                 rowheight=20, lightcolor=PANEL, darkcolor=PANEL)
     s.map('Treeview', background=[('selected', SELECT)], foreground=[('selected', TEXT)])
     s.configure('Treeview.Heading', background=BG, foreground=GOLD, bordercolor=BORDER, relief='flat',
-                font=('Segoe UI', 9, 'bold'), lightcolor=BG, darkcolor=BG, padding=(4, 3))
+                font=(FAMILY, 9, 'bold'), lightcolor=BG, darkcolor=BG, padding=(4, 3))
     s.map('Treeview.Heading', background=[('active', HOVER)])
     for w in ('Vertical.TScrollbar', 'Horizontal.TScrollbar'):
         s.configure(w, background=PANEL, troughcolor=BG, bordercolor=BG, arrowcolor=MUTED,

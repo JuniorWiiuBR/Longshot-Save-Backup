@@ -5,18 +5,46 @@
 import ctypes
 import os
 import tempfile
-from ctypes import wintypes
+try:
+    from ctypes import wintypes
+except (ImportError, ValueError):     # (not Windows)
+    wintypes = None
+
+
+def _jpeg_to_png_elsewhere(data):
+    """Linux and other systems: Pillow when installed, else ImageMagick or ffmpeg; None when none of them is there."""
+    try:
+        import io
+        from PIL import Image
+        out = io.BytesIO()
+        Image.open(io.BytesIO(data)).save(out, 'PNG')
+        return out.getvalue()
+    except Exception:
+        pass
+    import shutil
+    import subprocess
+    for cmd in (['magick', 'jpg:-', 'png:-'], ['convert', 'jpg:-', 'png:-'],
+                ['ffmpeg', '-loglevel', 'quiet', '-f', 'image2pipe', '-i', '-', '-f', 'image2', '-c:v', 'png', '-']):
+        if shutil.which(cmd[0]):
+            try:
+                r = subprocess.run(cmd, input=data, capture_output=True, timeout=20)
+                if r.returncode == 0 and r.stdout[:8] == b'\x89PNG\r\n\x1a\n':
+                    return r.stdout
+            except (OSError, subprocess.SubprocessError):
+                pass
+    return None
 
 PNG_ENCODER = '{557CF406-1A04-11D3-9A73-0000F81EF32E}'   # GDI+'s PNG encoder
 
 
 class _GUID(ctypes.Structure):
-    _fields_ = [('a', wintypes.DWORD), ('b', wintypes.WORD), ('c', wintypes.WORD), ('d', ctypes.c_ubyte * 8)]
+    # (plain ctypes sizes, the same as Windows' DWORD / WORD / BOOL, so this file also loads on Linux)
+    _fields_ = [('a', ctypes.c_uint32), ('b', ctypes.c_uint16), ('c', ctypes.c_uint16), ('d', ctypes.c_ubyte * 8)]
 
 
 class _StartupInput(ctypes.Structure):
     _fields_ = [('version', ctypes.c_uint32), ('callback', ctypes.c_void_p),
-                ('no_thread', wintypes.BOOL), ('no_codecs', wintypes.BOOL)]
+                ('no_thread', ctypes.c_int), ('no_codecs', ctypes.c_int)]
 
 
 _token = None
@@ -35,8 +63,10 @@ def _gdiplus():
 
 
 def jpeg_to_png(data):
-    if os.name != 'nt' or not data or data[:2] != b'\xff\xd8':
+    if not data or data[:2] != b'\xff\xd8':
         return None
+    if os.name != 'nt':
+        return _jpeg_to_png_elsewhere(data)
     tmp = tempfile.mkdtemp(prefix='nxsave-')
     src, dst = os.path.join(tmp, 'in.jpg'), os.path.join(tmp, 'out.png')
     try:

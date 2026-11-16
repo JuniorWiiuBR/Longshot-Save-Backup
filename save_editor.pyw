@@ -159,7 +159,7 @@ class EditDialog(tk.Toplevel):
         self.resizable(e.is_list, e.is_list)
         frm = ttk.Frame(self, padding=12)
         frm.pack(fill='both', expand=True)
-        ttk.Label(frm, text=app.name(e.hash), font=('Segoe UI', 10, 'bold'), wraplength=520).pack(anchor='w')
+        ttk.Label(frm, text=app.name(e.hash), font=(theme.FAMILY, 10, 'bold'), wraplength=520).pack(anchor='w')
         hint = e.type
         if e.base in nxsave.RANGE:
             lo, hi = nxsave.RANGE[e.base]
@@ -412,7 +412,7 @@ class App(ttk.Frame):
         age = ttk.Frame(f)
         age.grid(row=7, column=0, columnspan=3, sticky='w', pady=(10, 0))
         ttk.Label(age, text='Age').pack(side='left')
-        self.age_label = ttk.Label(age, text='', foreground=theme.GOLD, font=('Segoe UI', 9, 'bold'))
+        self.age_label = ttk.Label(age, text='', foreground=theme.GOLD, font=(theme.FAMILY, 9, 'bold'))
         self.age_label.pack(side='left', padx=(8, 6))
         self.age_btn = ttk.Button(age, text='Switch age', command=self.switch_age)
         self.age_btn.pack(side='left')
@@ -777,7 +777,7 @@ class App(ttk.Frame):
         where = s.files[next(iter(s.files))].path
         acct = where.parent.parent
         self.summary['text'] = '  ·  '.join(bits) + \
-            f'      {acct.parent.parent.name}\\{acct.parent.name}\\{acct.name[:8]}...\\{where.parent.name}'
+            '      ' + os.sep.join((acct.parent.parent.name, acct.parent.name, acct.name[:8] + '...', where.parent.name))
         n = s.edited()
         if n:
             self.set_status(f'{n} value{"s" if n != 1 else ""} edited, not saved yet  -  press Save (with the game '
@@ -1362,7 +1362,7 @@ class App(ttk.Frame):
         frm = ttk.Frame(win, padding=14)
         frm.pack(fill='both', expand=True)
         ttk.Label(frm, text=f'Write {s.label}' + (f' with its {s.edited()} edits' if s.dirty else '') +
-                  ' to these save locations:', font=('Segoe UI', 10, 'bold')).pack(anchor='w')
+                  ' to these save locations:', font=(theme.FAMILY, 10, 'bold')).pack(anchor='w')
         checks = []
         for app, d in places:
             var = tk.BooleanVar(value=True)
@@ -1464,8 +1464,7 @@ class App(ttk.Frame):
         self.winfo_toplevel().destroy()
 
     def open_backups(self):
-        BACKUPS.mkdir(exist_ok=True)
-        os.startfile(BACKUPS)
+        nxsave.open_folder(BACKUPS)
 
     def may_close(self):
         """True when the window may close: nothing unsaved, or the player said to drop it."""

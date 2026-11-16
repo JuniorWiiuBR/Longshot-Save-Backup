@@ -38,6 +38,19 @@ from your game files. That takes a little while, but only once.
 
 Needs Windows 10 or 11 and a game built with Triforce (or Longshot, below).
 
+LINUX (the "Link Toolbox (Linux).tar.gz" download):
+  1. Unpack it anywhere:  tar xzf "Link Toolbox (Linux).tar.gz"
+  2. Open "Link Toolbox.sh" (double-click, or run ./"Link Toolbox.sh").
+     Some file managers ask first, or need "Allow launching" / "Run as a
+     program" turned on for it.
+  It uses this computer's Python, which must be 3.14 or newer with Tk
+  (python3-tk / python3-tkinter / tk). If it's missing, the script says
+  what to install. On Linux the toolbox works best with Longshot's Linux
+  build (saves in ~/.local/share/longshot/save). Triforce or NX2navi run
+  through Wine/Proton can be picked in the Folders tab. The slot picture
+  needs Pillow, ImageMagick or ffmpeg installed (without them it's left
+  out). The first start makes a "Link Toolbox" launcher next to the script.
+
 
 -------------------------------------------------------------------------------
  LONGSHOT (EARLY SUPPORT)
