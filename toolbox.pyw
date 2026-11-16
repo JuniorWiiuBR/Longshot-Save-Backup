@@ -164,6 +164,16 @@ class Toolbox:
         self.share_btn.pack(side='left')
         self.unshare_btn = ttk.Button(sb, text='Stop sharing', command=self.unshare_mods)
         self.unshare_btn.pack(side='left', padx=(6, 0))
+        # one "user" folder (the saves) for Triforce and Longshot
+        ttk.Label(lb, text='Shared saves').grid(row=2, column=0, sticky='w', pady=(8, 0))
+        self.saves_label = ttk.Label(lb, text='', foreground=theme.SOFT, wraplength=560, justify='left')
+        self.saves_label.grid(row=2, column=1, sticky='w', padx=8, pady=(8, 0))
+        ss = ttk.Frame(lb)
+        ss.grid(row=2, column=2, sticky='e', pady=(8, 0))
+        self.share_saves_btn = ttk.Button(ss, text='Use one shared saves folder...', command=self.share_saves)
+        self.share_saves_btn.pack(side='left')
+        self.unshare_saves_btn = ttk.Button(ss, text='Stop sharing', command=self.unshare_saves)
+        self.unshare_saves_btn.pack(side='left', padx=(6, 0))
         self.show_shared()
         r += 1
         ttk.Label(tab, text='Triforce and Longshot only load mods from the mods folder in the game folder '
@@ -561,6 +571,17 @@ class Toolbox:
                                          'every build of every app, so a new build has your mods straight away.')
         self.share_btn['state'] = 'disabled' if shared or legacy else 'normal'
         self.unshare_btn['state'] = 'normal' if shared or legacy else 'disabled'
+        saves = nxsave.load_settings().get('shared_saves')
+        if saves:
+            import builds
+            n = sum(1 for _l, p in builds.save_places() if nxsave.is_link(p))
+            self.saves_label['text'] = (f'On: {saves}\nTriforce and Longshot use the same saves ({n} place'
+                                        f'{"s" if n != 1 else ""} linked).')
+        else:
+            self.saves_label['text'] = ('Off: Triforce and Longshot each keep their own saves (Longshot builds already '
+                                        'share theirs). On: one "user" folder for both. NX2navi is left out.')
+        self.share_saves_btn['state'] = 'disabled' if saves else 'normal'
+        self.unshare_saves_btn['state'] = 'normal' if saves else 'disabled'
 
     def after_shared_change(self):
         mod_loader.DEFAULT_MODS = nxsave.mods_dir_for(mod_loader.GAME)
@@ -624,6 +645,101 @@ class Toolbox:
         self.after_shared_change()
         self.folders_status['text'] = (f'Shared mods folder off: {len(done)} build{"s" if len(done) != 1 else ""} use '
                                        'their own mods folder again.')
+
+    # -- one shared "user" folder (the saves) for Triforce and Longshot
+    def share_saves(self):
+        import builds
+        import time
+        if not self.saves.may_discard():
+            return
+        busy_game = nxsave.game_running()
+        if busy_game:
+            messagebox.showwarning('Shared saves', f'Close {busy_game} first: a running game writes the saves.',
+                                   parent=self.root)
+            return
+        places = builds.save_places()
+        if len(places) < 2:
+            messagebox.showinfo('Shared saves', 'Only one place with saves was found, so there is nothing to share.',
+                                parent=self.root)
+            return
+        shared = Path.home() / 'Games' / 'Link Toolbox saves'
+        choices = [(label, p) + builds.saves_summary(p) for label, p in places]
+        if shared.is_dir() and builds.saves_summary(shared)[0]:
+            choices.insert(0, ('The shared folder (already there)', shared) + builds.saves_summary(shared))
+        choices = [c for c in choices if c[2]] or choices[:1]
+        # the picker: whose saves the shared folder starts from
+        win = tk.Toplevel(self.root)
+        win.title('Shared saves')
+        win.transient(self.root)
+        win.resizable(False, False)
+        frm = ttk.Frame(win, padding=16)
+        frm.pack(fill='both', expand=True)
+        ttk.Label(frm, text='One saves folder for Triforce and Longshot', font=(theme.FAMILY, 11, 'bold')).pack(
+            anchor='w')
+        ttk.Label(frm, text=f'Their "user" folders become links to\n  {shared}\n\nWhose saves should it start from? '
+                            'The others are NOT mixed in or deleted: they are kept as they are, renamed '
+                            '"... (before sharing)". Every save is also copied into the toolbox\'s backups first.',
+                  wraplength=560, justify='left', foreground=theme.SOFT).pack(anchor='w', pady=(6, 10))
+        pick = tk.IntVar(value=0)
+        for i, (label, p, slots, last) in enumerate(choices):
+            when = time.strftime('%Y-%m-%d %H:%M', time.localtime(last)) if last else 'no saves'
+            ttk.Radiobutton(frm, text=f'{label}:  {slots} slot{"s" if slots != 1 else ""}, last saved {when}\n    {p}',
+                            value=i, variable=pick).pack(anchor='w', pady=2)
+        ttk.Label(frm, text='NX2navi is left out: its profile folder holds another account and other data.',
+                  foreground=theme.MUTED).pack(anchor='w', pady=(8, 0))
+        bar = ttk.Frame(frm)
+        bar.pack(fill='x', pady=(12, 0))
+        answer = {}
+
+        def ok():
+            answer['i'] = pick.get()
+            win.destroy()
+        ttk.Button(bar, text='Cancel', command=win.destroy).pack(side='right')
+        ttk.Button(bar, text='Share the saves', command=ok).pack(side='right', padx=(0, 8))
+        win.update_idletasks()
+        win.geometry(f'+{self.root.winfo_rootx() + 120}+{self.root.winfo_rooty() + 80}')
+        win.grab_set()
+        self.root.wait_window(win)
+        if 'i' not in answer:
+            return
+        label, source = choices[answer['i']][:2]
+        import busy
+        try:
+            linked, failed, backup = busy.run(self.root, f'Setting up the shared saves from {label}:\nbacking every '
+                                              'save up, then linking Triforce and Longshot to it...',
+                                              lambda: builds.start_sharing_saves(shared, source))
+        except OSError as err:
+            messagebox.showerror('Shared saves', f'It could not be set up:\n{err}\n\nYour saves were backed up first, '
+                                 'in the toolbox\'s backups folder.', parent=self.root)
+            return
+        self.saves.load_file_list()
+        self.show_shared()
+        msg = (f'Shared saves on: {shared}\nStarted from: {label}\n\nLinked: ' + ', '.join(linked) +
+               f'\n\nBackup of every save first: {backup}')
+        if failed:
+            msg += '\n\nCould not link:\n' + '\n'.join(failed)
+        (messagebox.showwarning if failed else messagebox.showinfo)('Shared saves', msg, parent=self.root)
+
+    def unshare_saves(self):
+        import builds
+        shared = nxsave.load_settings().get('shared_saves')
+        if not shared or not self.saves.may_discard():
+            return
+        busy_game = nxsave.game_running()
+        if busy_game:
+            messagebox.showwarning('Stop sharing saves', f'Close {busy_game} first.', parent=self.root)
+            return
+        if not messagebox.askyesno('Stop sharing saves', f'Stop the shared saves?\n  {shared}\n\nTriforce and Longshot '
+                                   'each get their own saves folder again, with a copy of the shared saves (the '
+                                   'shared folder itself is left as it is).', parent=self.root):
+            return
+        import busy
+        done = busy.run(self.root, 'Stopping the shared saves: removing the links and copying the saves back...',
+                        builds.stop_sharing_saves)
+        self.saves.load_file_list()
+        self.show_shared()
+        self.folders_status['text'] = f'Shared saves off: {len(done)} place{"s" if len(done) != 1 else ""} use their ' \
+                                      'own saves folder again.'
 
     KEPT_KINDS = (('games', 'Game'), ('mods', 'Mods'), ('saves', 'Saves'))
 

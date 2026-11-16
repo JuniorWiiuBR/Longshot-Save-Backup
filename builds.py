@@ -107,6 +107,11 @@ def check(parent):
             busy.run(parent, 'Linking new builds to the shared mods folder...', ensure_links)
         else:
             ensure_links()
+    if nxsave.load_settings().get('shared_saves') and not nxsave.game_running():
+        try:
+            ensure_save_links()           # (a new build's user folder: linked to the shared saves too)
+        except OSError:
+            pass
     found = newer_build()
     if not found:
         return False
@@ -206,6 +211,158 @@ def start_sharing(shared):
     except Exception:
         pass
     return linked, failed
+
+
+# ----------------------------------------------------------------------------------------- shared saves ("user")
+# One "user" folder (save, save-tx, save-backup, temp) for Triforce and Longshot: Triforce's game\user and Longshot's
+# own data folder (%APPDATA%\Longshot; and each Longshot build's user folder) become links to it. NX2navi is left out:
+# its profile folder holds another account and other data. Turning it on backs every save up first, starts the shared
+# saves from the place the player picks, and keeps the others as they were, renamed "... (before sharing)".
+
+def longshot_data():
+    return nxsave.longshot_data()
+
+
+def save_places():
+    """[(label, user folder)] of every place a game keeps its saves in that can be shared."""
+    out, seen = [], set()
+
+    def add(label, p):
+        key = os.path.normcase(os.path.abspath(str(p)))
+        if key not in seen:
+            seen.add(key)
+            out.append((label, Path(p)))
+    longshot = False
+    for app, game in nxsave.all_game_dirs():
+        if app == 'Triforce':
+            add('Triforce' + ('' if is_main(game) else f' ({Path(game).name})'), Path(game) / 'user')
+        elif app == 'Longshot':
+            longshot = True
+            add(f'Longshot build {Path(game).name}', Path(game) / 'user')
+    if longshot or longshot_data().exists():
+        add('Longshot (its launcher)', longshot_data())
+    return out
+
+
+def is_main(game):
+    found = [d for a, d in nxsave.all_game_dirs() if a == 'Triforce']
+    return bool(found) and same(found[0], game)
+
+
+def saves_summary(place):
+    """(slots, last saved time or 0) of the saves in a user folder."""
+    import re
+    save = Path(place) / 'save'
+    slots, last = 0, 0
+    if save.is_dir():
+        for acct in save.iterdir():
+            if acct.is_dir() and re.fullmatch(r'[0-9a-fA-F]{32}', acct.name):
+                for slot in acct.glob('slot_[0-9][0-9]'):
+                    if (slot / 'progress.sav').is_file():
+                        slots += 1
+                        last = max(last, (slot / 'progress.sav').stat().st_mtime)
+    return slots, last
+
+
+def backup_saves(places, why='before sharing saves'):
+    """Copies every place's save folder into the toolbox's backups folder; returns where."""
+    import time
+    dest = nxsave.HERE / 'backups' / f'{time.strftime("%Y-%m-%d %H%M%S")} {why}'
+    for label, place in places:
+        save = Path(place) / 'save'
+        if save.is_dir():
+            shutil.copytree(save, dest / label.replace('/', '-').replace('\\', '-') / 'save', dirs_exist_ok=True)
+    return dest
+
+
+def aside(place):
+    """Renames a folder to '<name> (before sharing)' (a free name); returns the new name."""
+    place = Path(place)
+    keep, n = place.with_name(f'{place.name} (before sharing)'), 2
+    while keep.exists():
+        keep, n = place.with_name(f'{place.name} (before sharing {n})'), n + 1
+    place.rename(keep)
+    return keep
+
+
+def link_place(place, shared):
+    """A user folder becomes a link to the shared one: what was there is kept aside (its loose files, such as
+    Longshot's options file, are copied in when the shared folder has none). True when it was linked now."""
+    place = Path(place)
+    if nxsave.is_link(place):
+        if same(nxsave.link_target(place), shared):
+            return False
+        nxsave.remove_link(place)
+    elif place.exists():
+        for f in place.iterdir():
+            if f.is_file() and not (Path(shared) / f.name).exists():
+                shutil.copy2(f, Path(shared) / f.name)
+        aside(place)
+    place.parent.mkdir(parents=True, exist_ok=True)
+    nxsave.make_link(place, shared)
+    return True
+
+
+def start_sharing_saves(shared, source):
+    """Turns the shared saves on: every save is backed up, the shared folder starts from source (a user folder, or the
+    shared folder itself when it has saves already), and every place is linked to it."""
+    shared = Path(shared)
+    places = save_places()
+    backup = backup_saves(places + ([('Shared folder (before)', shared)] if shared.is_dir() else []))
+    shared.mkdir(parents=True, exist_ok=True)
+    if not same(source, shared):
+        source = Path(source)
+        for child in list(source.iterdir()):
+            target = shared / child.name
+            if target.exists():
+                if target.is_dir():
+                    shutil.rmtree(target)       # (only inside the shared folder, which starts from source)
+                else:
+                    target.unlink()
+            shutil.move(str(child), str(target))
+        source.rmdir()
+        nxsave.make_link(source, shared)
+    nxsave.save_settings({**nxsave.load_settings(), 'shared_saves': str(shared)})
+    linked, failed = [], []
+    for label, place in places:
+        try:
+            link_place(place, shared)
+            linked.append(label)
+        except OSError as err:
+            failed.append(f'{label}: {err}')
+    return linked, failed, backup
+
+
+def ensure_save_links():
+    """Shared saves on: new builds' user folders are linked too. Returns the places linked now."""
+    shared = nxsave.load_settings().get('shared_saves')
+    if not shared:
+        return []
+    done = []
+    for label, place in save_places():
+        try:
+            if link_place(place, shared):
+                done.append(label)
+        except OSError:
+            pass
+    return done
+
+
+def stop_sharing_saves():
+    """Turns it off: each place gets its own user folder again, with a copy of the shared saves (the shared folder
+    itself is left as it is)."""
+    shared = nxsave.load_settings().get('shared_saves')
+    done = []
+    for label, place in save_places():
+        if nxsave.is_link(place) and (not shared or same(nxsave.link_target(place), shared)):
+            nxsave.remove_link(place)
+            if shared and Path(shared).is_dir():
+                shutil.copytree(shared, place, dirs_exist_ok=True)
+            else:
+                Path(place).mkdir(parents=True, exist_ok=True)
+            done.append(label)
+    nxsave.save_settings({**nxsave.load_settings(), 'shared_saves': ''})
+    return done
 
 
 def stop_sharing(copy_back=True):

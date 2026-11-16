@@ -596,13 +596,20 @@ def save_dirs(game=None):
     return out
 
 
+def longshot_data():
+    """Longshot's own data folder (its launcher keeps the saves there): %APPDATA%\\Longshot, or on Linux
+    ~/.local/share/longshot."""
+    if WINDOWS and os.environ.get('APPDATA'):
+        return Path(os.environ['APPDATA']) / 'Longshot'
+    return HOME / '.local' / 'share' / 'longshot'
+
+
 def save_bases(game, app):
     """The folders an app keeps its save accounts in, its own first."""
     game = Path(game)
     bases = [game.joinpath(*parts) for parts in SAVE_BASES]
     if app == 'Longshot':     # Longshot started from its launcher keeps the saves in %APPDATA%\Longshot\save
-        bases.insert(0, Path(os.environ['APPDATA'], 'Longshot', 'save') if WINDOWS and os.environ.get('APPDATA')
-                     else HOME / '.local' / 'share' / 'longshot' / 'save')     # (Linux)
+        bases.insert(0, longshot_data() / 'save')
     elif app == 'NX2navi':    # NX2navi's own saves: profile/save (Triforce moved its copies to user/save)
         bases.reverse()
     return bases

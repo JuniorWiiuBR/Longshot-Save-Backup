@@ -89,6 +89,11 @@ build in a new folder (Longshot always does), whose mods folder starts empty.
   "mods" folder becomes a link to it (new builds get linked when found).
   "Stop sharing" removes the links (not the shared folder) and can copy the
   mods back into every build.
+  Shared saves (optional): Folders tab > "Use one shared saves folder..."
+  gives Triforce and Longshot one "user" folder, so both play the same
+  saves. You pick whose saves to start from; the others are kept as they
+  are, renamed "... (before sharing)", and every save is backed up first.
+  "Stop sharing" gives each its own copy again. NX2navi is left out.
 
 Longshot is still in development, so this support is early: a change in
 Longshot may need a toolbox update.
