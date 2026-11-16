@@ -63,13 +63,14 @@ Needs Windows 10 or 11.
 '''
 
 
-# mods shipped switched off (their name keeps its leading _): Add mods installs them off, the player turns one on
+# The download always ships these the same way, whatever is on or off in my own mods folder right now:
+SHIP_ON = ('Biggoron One-Handed',)               # (the default way to hold the Biggoron Sword)
 SHIP_OFF = ('Young Link Two-Handed Swords',)     # (replaces the same file as Biggoron One-Handed: one or the other)
 
 
 def share_mods():
-    """The mods that are on in the game's mods folder (not starting with _ or -), the size table, and the SHIP_OFF
-    mods (switched off)."""
+    """[(folder, name in the download)]: the mods that are on in the game's mods folder, the size table, the SHIP_ON
+    mods (on even when they are off here) and the SHIP_OFF mods (switched off: their name keeps a leading _)."""
     sys.path.insert(0, str(HERE))
     import nxsave
     # (from the Triforce game when there is one, whatever game the toolbox is set to now)
@@ -78,8 +79,18 @@ def share_mods():
     print('mods from:', mods)
     import re
     plain = lambda name: re.sub(r'^(?:[-_]+)?(?:\d+-)?', '', name)
-    return sorted(p for p in mods.iterdir() if p.is_dir() and (p / 'romfs').is_dir()
-                  and (not p.name.startswith(('_', '-')) or plain(p.name) in SHIP_OFF)) if mods.is_dir() else []
+    out = []
+    for p in sorted(mods.iterdir()) if mods.is_dir() else []:
+        if not p.is_dir() or not (p / 'romfs').is_dir():
+            continue
+        name, off = plain(p.name), p.name.startswith(('_', '-'))
+        if name in SHIP_OFF:
+            out.append((p, f'_{name}'))
+        elif name in SHIP_ON:
+            out.append((p, p.name if not off else f'90-{name}'))
+        elif not off:
+            out.append((p, p.name))
+    return out
 
 
 LINUX_OUT = HERE / 'share' / 'Link Toolbox (Linux).tar.gz'
@@ -139,10 +150,10 @@ def build_linux():
             if (HERE / name).is_file():
                 file(tar, HERE / name, 'app/' + name)
         if '--no-mods' not in sys.argv:
-            for mod in share_mods():
+            for mod, as_name in share_mods():
                 for p in sorted(mod.rglob('*')):
                     if p.is_file():
-                        file(tar, p, 'mods/' + mod.name + '/' + p.relative_to(mod).as_posix())
+                        file(tar, p, 'mods/' + as_name + '/' + p.relative_to(mod).as_posix())
     tmp.replace(LINUX_OUT)
     print(f'{LINUX_OUT}  {LINUX_OUT.stat().st_size / 1e6:.1f} MB')
 
@@ -173,12 +184,12 @@ def main():
                 z.write(HERE / name, root + 'app/' + name)
         if '--no-mods' not in sys.argv:
             shared = share_mods()
-            for mod in shared:
+            for mod, as_name in shared:
                 for p in sorted(mod.rglob('*')):
                     if p.is_file():
-                        z.write(p, root + 'mods/' + mod.name + '/' + p.relative_to(mod).as_posix(),
+                        z.write(p, root + 'mods/' + as_name + '/' + p.relative_to(mod).as_posix(),
                                 compress_type=zipfile.ZIP_STORED if p.suffix == '.zs' else zipfile.ZIP_DEFLATED)
-            print('mods:', ', '.join(m.name for m in shared) or 'none')
+            print('mods:', ', '.join(n for _m, n in shared) or 'none')
         n = 0
         for p in sorted(PYTHON.rglob('*')):
             rel = p.relative_to(PYTHON)
