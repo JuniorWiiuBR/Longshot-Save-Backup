@@ -91,6 +91,13 @@ Every list sorts by any column: click the heading, and click again to reverse. *
 ### Folders
 **Games found** lists every game the toolbox finds, by app: Triforce, Longshot, and NX2navi (whose `ocarina.exe` can sit in the same folder as Triforce's). Pick one and press Apply: the toolbox reopens with that game's program for Save and play, its mods and its saves. Or set a different game, mods or saves folder by hand. Leave a box empty for the default. Folders you fill in by hand (ones the toolbox didn't find) are **kept as choices** if the Keep box is ticked: they show up in Games found, in the Mods tab's Game list and in the Save editor's Game list. The **Kept choices** list shows every kept folder, each with a **Forget** button to remove it.
 
+Three things to know:
+1. A brand-new build gets linked when the toolbox next opens. If a launcher makes a new build and you start the game straight away without opening the toolbox, that build’s mods folder starts out empty. Opening the toolbox once links it, after which the build has the shared mods. (Saves are different: new Longshot builds always have theirs, through the launcher.)
+
+2. Play one game at a time. With shared saves, two games writing the same save files at once could overwrite each other’s progress. The toolbox refuses to set up or stop sharing while a game is running.
+
+3.Don’t delete the shared folders. The builds only point at them. Stop sharing is the safe way back: it puts a real copy into every build first.
+
 ![The Folders tab](docs/folders.png)
 
 ### Look
