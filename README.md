@@ -18,10 +18,10 @@ irm https://raw.githubusercontent.com/losava/Links-Toolbox/main/install.ps1 | ie
 
 Or get **`Link Toolbox.zip`** from the [Releases](../../releases) page, then use it either way:
 
-- **Portable:** unzip it anywhere (even a USB stick) and double-click **`Link Toolbox.bat`**. Nothing is installed: to remove it, delete the folder.
-- **Installed app:** double-click **`Install Link Toolbox.bat`** in the unzipped folder (details below).
+- **Installed app (recommended):** double-click **`Install Link Toolbox.bat`** in the unzipped folder (details below). It stays in one place, so your settings (game, folders, shared builds, look) are kept through every update.
+- **Portable:** unzip it anywhere (even a USB stick) and double-click **`Link Toolbox.bat`**. Nothing is installed: to remove it, delete the folder. It updates itself too, but a fresh download starts with no settings. You can install it later from its **Updates** tab (**Install as an app**), and its settings and backups come along.
 
-**Install it (Windows):** in the unzipped folder, double-click **`Install Link Toolbox.bat`**. It installs the toolbox for you to `%LOCALAPPDATA%\Programs\Link Toolbox` (no admin needed), with Start menu and Desktop shortcuts, and an entry in **Windows Settings → Apps** to uninstall it. Running it again over an installed copy upgrades it and keeps your settings.
+**Install it (Windows):** in the unzipped folder, double-click **`Install Link Toolbox.bat`**. It installs the toolbox for you to `%LOCALAPPDATA%\Programs\Link Toolbox` (no admin needed), with Start menu and Desktop shortcuts, and an entry in **Windows Settings → Apps** to uninstall it. Running it again over an installed copy upgrades it and keeps your settings. Installing from a portable copy you've used brings that copy's settings and backups along.
 
 **Updates:** the **Updates** tab shows your version and checks GitHub for a newer one, by itself when the toolbox opens (you can turn that off) or with a button. It only tells you: nothing changes until you click **Update now**. That downloads the new version, closes the toolbox, puts it in place and reopens it, keeping your settings, backups, names lists and icon. This works for both the portable and the installed app.
 

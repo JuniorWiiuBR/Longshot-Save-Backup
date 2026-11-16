@@ -247,14 +247,20 @@ class Toolbox:
                 mine = install.is_installed_copy()
             except Exception:
                 pass
-        ttk.Button(row, text=f"Uninstall {nxsave.APP_NAME} (this app)...", command=self.uninstall,
-                   state='normal' if mine else 'disabled').pack(side='left')
-        ttk.Label(row, text=(f"Removes only the {nxsave.APP_NAME} app: its folder, shortcuts and Windows Settings > Apps "
-                             'entry. The game, your game saves and your mods are not touched. It asks first.')
-                  if mine else f"This is the portable {nxsave.APP_NAME} (run from its folder, not installed), so there's "
-                  'nothing to uninstall: to remove it, delete its folder. (Uninstalling is for the installed app, set '
-                  'up with Install Link Toolbox.bat.) The game is never touched.',
-                  foreground=theme.MUTED, wraplength=640, justify='left').pack(side='left', padx=(10, 0))
+        if mine or kind != 'portable':
+            ttk.Button(row, text=f"Uninstall {nxsave.APP_NAME} (this app)...", command=self.uninstall,
+                       state='normal' if mine else 'disabled').pack(side='left')
+            ttk.Label(row, text=(f"Removes only the {nxsave.APP_NAME} app: its folder, shortcuts and Windows Settings > "
+                                 'Apps entry. The game, your game saves and your mods are not touched. It asks first.')
+                      if mine else 'Uninstalling is for the installed app.',
+                      foreground=theme.MUTED, wraplength=640, justify='left').pack(side='left', padx=(10, 0))
+        else:                          # (portable: installing is the recommended way, and brings this copy's settings)
+            ttk.Button(row, text='Install as an app (recommended)...', command=self.install_app).pack(side='left')
+            ttk.Label(row, text=f"This is the portable {nxsave.APP_NAME}. It updates here too, but a new download starts "
+                      'from scratch. Installed, it stays in one place and keeps your settings (game, folders, shared '
+                      'builds, look) through every update. Your settings and backups from this copy come along. To '
+                      'remove the portable copy, delete its folder.',
+                      foreground=theme.MUTED, wraplength=640, justify='left').pack(side='left', padx=(10, 0))
         self.newest = {}
         self.update_q = queue.Queue()
         self.root.after(200, self.poll_updates)
@@ -308,6 +314,20 @@ class Toolbox:
         else:
             self.update_status['text'] = f"You have the newest version ({nxsave.VERSION})."
         self.update_btn['state'] = 'normal' if newer and not updater.can_update() else 'disabled'
+
+    def install_app(self):
+        """Opens the install window of this portable copy (the same one Install Link Toolbox.bat opens)."""
+        import subprocess
+        script = Path(__file__).resolve().parent / 'install.py'
+        py = Path(sys.executable)
+        py = py.with_name('pythonw.exe') if py.with_name('pythonw.exe').is_file() else py
+        try:
+            subprocess.Popen([str(py), str(script)], cwd=str(script.parent))
+        except OSError as err:
+            messagebox.showerror(nxsave.APP_NAME, f'The installer could not be opened:\n{err}', parent=self.root)
+            return
+        messagebox.showinfo(nxsave.APP_NAME, 'The install window is opening. Once it is installed, use the new '
+                            f'"{nxsave.APP_NAME}" shortcut, and close this portable copy.', parent=self.root)
 
     def uninstall(self):
         """Asks twice (uninstall? keep backups and settings?), then the toolbox closes and is removed."""

@@ -120,6 +120,35 @@ def copy_in(target):
     for name in ('icon.ico', 'icon.png'):
         if not (target / 'app' / name).exists() and (HERE / name).exists():
             (target / 'app' / name).write_bytes((HERE / name).read_bytes())
+    bring_own_files(target)
+
+
+OWN_FILES = ('toolbox_settings.json', 'names-cache-*.json')   # (what the player set up in a copy they used)
+
+
+def bring_own_files(target):
+    """Installing from a portable copy that was used: its settings (game, folders, shared builds, look...), names
+    lists and save backups come along, so nothing has to be set up again. Only into an install that has no settings of
+    its own: an installed copy's own are never replaced. Returns the names brought."""
+    import shutil
+    app = target / 'app'
+    if (app / 'toolbox_settings.json').exists() or not (HERE / 'toolbox_settings.json').is_file():
+        return []
+    brought = []
+    for pattern in OWN_FILES:
+        for f in HERE.glob(pattern):
+            if f.is_file() and not (app / f.name).exists():
+                shutil.copy2(f, app / f.name)
+                brought.append(f.name)
+    backups = HERE / 'backups'
+    if backups.is_dir():
+        (app / 'backups').mkdir(parents=True, exist_ok=True)
+        for b in backups.iterdir():
+            dest = app / 'backups' / b.name
+            if not dest.exists():
+                (shutil.copytree if b.is_dir() else shutil.copy2)(b, dest)
+        brought.append('backups')
+    return brought
 
 
 def install(target, desk=True, menu=True, reg=True, links=True):
@@ -218,9 +247,12 @@ def window():
     found = installed()
     ttk.Label(frm, text=f'{NAME} {nxsave.VERSION}', font=(theme.FAMILY, 13, 'bold')).grid(row=0, column=0,
                                                                                       columnspan=3, sticky='w')
+    used = (HERE / 'toolbox_settings.json').is_file()
     ttk.Label(frm, text=('Upgrades the installed copy: your settings, backups and icon are kept.' if found else
                          'Installs it for you (no admin needed), with shortcuts and an entry in Windows Settings > '
-                         'Apps to uninstall it. Updates then come from its Updates tab.'),
+                         'Apps to uninstall it. Updates then come from its Updates tab, and your settings stay put.' +
+                         ('\n\nThe settings and backups of this copy come along: your game, folders, shared builds '
+                          'and look stay as you set them.' if used else '')),
               foreground=theme.SOFT, wraplength=560, justify='left').grid(row=1, column=0, columnspan=3, sticky='w',
                                                                           pady=(4, 12))
     ttk.Label(frm, text='Install to').grid(row=2, column=0, sticky='w')

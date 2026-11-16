@@ -14,7 +14,7 @@ through Triforce. In one window it lets you:
   * point it at a different game, mods or saves folder
   * make it look the way you like (themes and tab colours)
 
-Nothing to install. It brings its own Python, and it never changes the game
+It brings its own Python (nothing else to install), and it never changes the game
 itself. It only touches your mods folder and your save files.
 
 
@@ -22,19 +22,24 @@ itself. It only touches your mods folder and your save files.
  GETTING STARTED
 -------------------------------------------------------------------------------
 
+INSTALLED APP (Windows, recommended): double-click  Install Link Toolbox.bat
+  It goes to %LOCALAPPDATA%\Programs\Link Toolbox (no admin needed), with
+  Start menu and Desktop shortcuts, and an entry in Windows Settings > Apps.
+  It stays in one place, so your settings (game, folders, shared builds,
+  look) are kept through every update. Running it again over an installed
+  copy upgrades it. Installing from a portable copy you've used brings its
+  settings and backups along.
+  To uninstall the app: Updates tab > "Uninstall Link's Tool Box (this app)",
+  or Windows Settings > Apps. It removes only the toolbox app (it asks
+  first): the game, your game saves and your mods are not touched.
+
 PORTABLE (nothing installed):
   1. Unzip the "Link Toolbox" folder anywhere (Desktop, Documents, a USB
      stick...).
   2. Double-click  Link Toolbox.bat
+  It updates itself too (Updates tab), but a fresh download starts with no
+  settings. To install it later: Updates tab > "Install as an app".
   To remove the portable copy, delete its folder.
-
-INSTALLED APP (Windows): double-click  Install Link Toolbox.bat
-  It goes to %LOCALAPPDATA%\Programs\Link Toolbox (no admin needed), with
-  Start menu and Desktop shortcuts, and an entry in Windows Settings > Apps.
-  Running it again over an installed copy upgrades it.
-  To uninstall the app: Updates tab > "Uninstall Link's Tool Box (this app)",
-  or Windows Settings > Apps. It removes only the toolbox app (it asks
-  first): the game, your game saves and your mods are not touched.
 
 UPDATES: the Updates tab checks GitHub for a newer version (when the
 toolbox opens, unless you turn that off). It only tells you: nothing
