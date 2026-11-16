@@ -1,6 +1,6 @@
-<img src="docs/icon.png" width="96" align="right" alt="Link's Toolbox icon">
+<img src="docs/icon.png" width="96" align="right" alt="Link's Tool Box icon">
 
-# Link's Toolbox
+# Link's Tool Box
 
 **Mod loader and save editor for *The Legend of Zelda: Ocarina of Time* on [Triforce](https://git.triforceproject.com/triforce/source)**, the PC port. It also works with [Longshot](https://git.magicbean.dev/MagicBeanDev/Longshot) (early support, since Longshot is still in development; see [Longshot](#longshot) below).
 
@@ -25,11 +25,11 @@ Or get **`Link Toolbox.zip`** from the [Releases](../../releases) page, then use
 
 **Updates:** the **Updates** tab shows your version and checks GitHub for a newer one, by itself when the toolbox opens (you can turn that off) or with a button. It only tells you: nothing changes until you click **Update now**. That downloads the new version, closes the toolbox, puts it in place and reopens it, keeping your settings, backups, names lists and icon. This works for both the portable and the installed app.
 
-**Uninstall (installed app):** the Updates tab's **Uninstall Link's Toolbox (this app)** button, or Windows Settings → Apps. It removes only the toolbox app, its shortcuts and its Apps entry, after asking first. The game, your game saves and your mods are not touched. For the portable copy, just delete its folder.
+**Uninstall (installed app):** the Updates tab's **Uninstall Link's Tool Box (this app)** button, or Windows Settings → Apps. It removes only the toolbox app, its shortcuts and its Apps entry, after asking first. The game, your game saves and your mods are not touched. For the portable copy, just delete its folder.
 
 **Linux (new, untested):** get **`Link Toolbox (Linux).tar.gz`** instead, unpack it (`tar xzf "Link Toolbox (Linux).tar.gz"`) and open **`Link Toolbox.sh`**. It uses your system's Python, which must be **3.14 or newer with Tk** (`python3-tk`, `python3-tkinter` or `tk`). If either is missing, the script says what to install. It works best with Longshot's Linux build, whose saves are in `~/.local/share/longshot/save`. The slot picture needs Pillow, ImageMagick or ffmpeg. The Linux version hasn't been tried on a real Linux PC yet, so please report what works.
 
-The first time, it also makes a **Link Toolbox** shortcut with the toolbox's icon next to the `.bat` file (a `.bat` can't have an icon of its own), so you can use that shortcut from then on. There's nothing to install: the zip brings its own Python. You need Windows 10 or 11 and a game built with Triforce (or Longshot). The toolbox finds the game where Triforce installed it, or asks you once for the folder that has `Triforce.exe` (or `longshot.exe`).
+The first time, it also makes a **Link's Tool Box** shortcut with the toolbox's icon next to the `.bat` file (a `.bat` can't have an icon of its own), so you can use that shortcut from then on. There's nothing to install: the zip brings its own Python. You need Windows 10 or 11 and a game built with Triforce (or Longshot). The toolbox finds the game where Triforce installed it, or asks you once for the folder that has `Triforce.exe` (or `longshot.exe`).
 
 ## Mods included
 
@@ -106,7 +106,7 @@ Three things to know:
 ### Look
 Five themes (Dark green, Dark grey, Dark blue, Midnight purple, Light), an accent colour, and a colour for every tab. Changes show at once and are remembered.
 
-**Icon:** Link's toolbox (the default), a Triforce, or a square cut from any save slot's picture (a slider picks which part). The icon is used on the window and the taskbar, and on the shortcuts, which you can also make on your Desktop.
+**Icon:** Link's Tool Box (the default), a Triforce, or a square cut from any save slot's picture (a slider picks which part). The icon is used on the window and the taskbar, and on the shortcuts, which you can also make on your Desktop.
 
 ![The Look tab](docs/look.png)
 
@@ -183,7 +183,7 @@ The names of the save's entries aren't stored in this repository. The toolbox re
 
 ## Credits
 
-Link's Toolbox by **Cum_Dumpster**, released under the [MIT License](LICENSE).
+Link's Tool Box by **Cum_Dumpster**, released under the [MIT License](LICENSE).
 
 Works with [Triforce](https://git.triforceproject.com/triforce/source) and [Longshot](https://git.magicbean.dev/MagicBeanDev/Longshot) (by MagicBeanDev and the Longshot contributors, a continuation of Hookshot by NotRexed). Neither is part of this project, and neither ships with it.
 

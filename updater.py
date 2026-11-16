@@ -1,4 +1,4 @@
-"""Updates for Link's Toolbox from its GitHub releases (Windows): find the latest release, download its Windows zip,
+"""Updates for Link's Tool Box from its GitHub releases (Windows): find the latest release, download its Windows zip,
 and put it in place of this copy once the toolbox has closed, keeping what is the player's own (settings, backups,
 the names read from the game, the icon picked), then start the toolbox again.
 
@@ -29,7 +29,7 @@ ROOT = APP.parent                          # ...\Link Toolbox
 AGENT = 'Link-Toolbox-updater'             # (no personal details are sent: just this name)
 # the player's own files, never replaced by an update
 KEEP_FILES = ('toolbox_settings.json', 'names-cache-*.json', 'names-cache.json', 'icon.ico', 'icon.png',
-              'Link Toolbox.lnk', 'toolbox.log')
+              'Link Toolbox.lnk', "Link's Tool Box.lnk", 'toolbox.log')
 KEEP_DIRS = ('backups',)
 
 
@@ -58,7 +58,7 @@ def can_update():
     if (APP / '.git').exists():
         return 'This copy is a development folder (git): update it with git, not here.'
     if not (ROOT / 'python' / 'pythonw.exe').is_file():
-        return 'This copy is not the one from the Link Toolbox download (no python folder next to it).'
+        return "This copy is not the one from the Link's Tool Box download (no python folder next to it)."
     try:
         probe = ROOT / '.update-test'
         probe.write_text('x')
@@ -89,18 +89,18 @@ def unpack(zip_path, work):
     new = Path(work) / 'Link Toolbox'
     for need in ('app/toolbox.pyw', 'app/nxsave.py', 'python/pythonw.exe'):
         if not (new / need).is_file():
-            raise ValueError(f'the download has no {need}: not a Link Toolbox download')
+            raise ValueError(f"the download has no {need}: not a Link's Tool Box download")
     return new
 
 
 SCRIPT = r'''@echo off
-rem Link's Toolbox update: waits for the toolbox to close, copies the new version in, starts it again.
-title Updating Link's Toolbox
+rem Link's Tool Box update: waits for the toolbox to close, copies the new version in, starts it again.
+title Updating Link's Tool Box
 :wait
 tasklist /FI "PID eq {pid}" 2>nul | find "{pid}" >nul && (timeout /t 1 /nobreak >nul & goto wait)
 robocopy "{new}" "{root}" /E /XF {keep_files} /XD {keep_dirs} /R:5 /W:1 /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 (
-  echo The update could not be copied in. Close every Link Toolbox window and try again.
+  echo The update could not be copied in. Close every Link's Tool Box window and try again.
   pause
   exit /b 1
 )

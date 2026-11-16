@@ -24,20 +24,20 @@ OUT = HERE / 'share' / 'Link Toolbox.zip'
 APP = ('toolbox.pyw', 'mod_loader.pyw', 'save_editor.pyw', 'nxsave.py', 'oot_catalog.py', 'jpeg_win.py',
        'size_table.py', 'theme.py', 'icons.py', 'updater.py', 'install.py', 'builds.py', 'busy.py')
 INSTALL_BAT = '''@echo off
-rem Installs Link's Toolbox for this user (Start menu, Desktop, Windows Settings > Apps), or upgrades the installed one.
+rem Installs Link's Tool Box for this user (Start menu, Desktop, Windows Settings > Apps), or upgrades the installed one.
 start "" "%~dp0python\\pythonw.exe" "%~dp0app\\install.py"
 '''
 OPTIONAL = ('icon.ico', 'icon.png')     # the icon picked in the Look tab (made with the default one when missing)
 SKIP_PY = ('Lib', '__pycache__')      # (Lib holds only site-packages: 72 MB the toolbox never imports)
 
 BAT = '''@echo off
-rem Opens the Link toolbox (mod loader and save editor) with the Python in this folder.
+rem Opens Link's Tool Box (mod loader and save editor) with the Python in this folder.
 start "" "%~dp0python\\pythonw.exe" "%~dp0app\\toolbox.pyw"
 '''
 
-README = '''Link Toolbox - mod loader and save editor for Zelda: Ocarina of Time on Triforce
+README = '''Link''s Tool Box - mod loader and save editor for Zelda: Ocarina of Time on Triforce
 ==============================================================================
-Link's Tools, by Cum_Dumpster
+Link's Tool Box, by Cum_Dumpster
 
 Start:   unzip this folder anywhere (Desktop, Documents...), then double-click "Link Toolbox.bat".
          Nothing to install: the Python it needs is in the python folder.
@@ -84,7 +84,7 @@ def share_mods():
 
 LINUX_OUT = HERE / 'share' / 'Link Toolbox (Linux).tar.gz'
 SH = '''#!/bin/sh
-# Opens Link's Toolbox (mod loader and save editor) with this computer's Python: 3.14 or newer, with Tk.
+# Opens Link's Tool Box (mod loader and save editor) with this computer's Python: 3.14 or newer, with Tk.
 cd "$(dirname "$0")" || exit 1
 for py in python3.14 python3.15 python3.16 python3.17 python3 python; do
   if command -v "$py" >/dev/null 2>&1 && \\
@@ -92,15 +92,15 @@ for py in python3.14 python3.15 python3.16 python3.17 python3 python; do
     exec "$py" app/toolbox.pyw "$@"
   fi
 done
-msg="Link's Toolbox needs Python 3.14 or newer, with Tk.
+msg="Link's Tool Box needs Python 3.14 or newer, with Tk.
 
 Install them, then open Link Toolbox.sh again. For example:
   Ubuntu / Debian:  sudo apt install python3 python3-tk
   Fedora:           sudo dnf install python3 python3-tkinter
   Arch / SteamOS:   sudo pacman -S python tk
 (Python 3.14 is needed: older systems may need a newer Python first.)"
-if command -v zenity >/dev/null 2>&1; then zenity --error --title="Link's Toolbox" --text="$msg"
-elif command -v kdialog >/dev/null 2>&1; then kdialog --title "Link's Toolbox" --error "$msg"
+if command -v zenity >/dev/null 2>&1; then zenity --error --title="Link's Tool Box" --text="$msg"
+elif command -v kdialog >/dev/null 2>&1; then kdialog --title "Link's Tool Box" --error "$msg"
 else printf '%s\\n' "$msg" >&2; fi
 exit 1
 '''

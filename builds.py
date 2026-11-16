@@ -15,7 +15,7 @@ from tkinter import messagebox
 
 import nxsave
 
-TITLE = "Link's Toolbox"
+TITLE = nxsave.APP_NAME
 
 
 def same(a, b):

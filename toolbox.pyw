@@ -1,4 +1,4 @@
-"""The Link toolbox: the mod loader and the save editor in one window, a tab each.
+"""Link's Tool Box: the mod loader and the save editor in one window, a tab each.
 
     Mods          switch the mods in game/mods on and off, set their order, Save and play (mod_loader.pyw)
     Save editor   every entry of a save by name, the Give buttons (save_editor.pyw)
@@ -24,7 +24,7 @@ import updater  # noqa: E402
 import jpeg_win  # noqa: E402
 from tkinter import colorchooser  # noqa: E402
 
-BASE_TITLE = 'Link toolbox'
+BASE_TITLE = nxsave.APP_NAME
 CREDIT = 'Cum_Dumpster'      # the watermark along the bottom of the window
 
 
@@ -68,7 +68,7 @@ class Toolbox:
         root.geometry('1100x720')
         root.minsize(760, 440)
         self.titles = {}
-        ttk.Label(root, text=f"Link's Tools  ·  by {CREDIT}", foreground=theme.FAINT,
+        ttk.Label(root, text=f"{nxsave.APP_NAME}  ·  by {CREDIT}", foreground=theme.FAINT,
                   font=(theme.FAMILY, 8, 'italic')).pack(side='bottom', anchor='e', padx=10, pady=(0, 4))
         self.book = ttk.Notebook(root)
         self.book.pack(fill='both', expand=True, padx=6, pady=6)
@@ -204,7 +204,7 @@ class Toolbox:
                 kind = 'portable'
         elif os.name != 'nt':
             kind = 'Linux'
-        ttk.Label(tab, text=f"Link's Toolbox {nxsave.VERSION}   ({kind})", font=(theme.FAMILY, 12, 'bold')).grid(
+        ttk.Label(tab, text=f"{nxsave.APP_NAME} {nxsave.VERSION}   ({kind})", font=(theme.FAMILY, 12, 'bold')).grid(
             row=0, column=0, sticky='w')
         self.update_status = ttk.Label(tab, text='Not checked yet.', foreground=theme.SOFT, wraplength=900,
                                        justify='left')
@@ -247,11 +247,11 @@ class Toolbox:
                 mine = install.is_installed_copy()
             except Exception:
                 pass
-        ttk.Button(row, text="Uninstall Link's Toolbox (this app)...", command=self.uninstall,
+        ttk.Button(row, text=f"Uninstall {nxsave.APP_NAME} (this app)...", command=self.uninstall,
                    state='normal' if mine else 'disabled').pack(side='left')
-        ttk.Label(row, text=("Removes only the Link's Toolbox app: its folder, shortcuts and Windows Settings > Apps "
+        ttk.Label(row, text=(f"Removes only the {nxsave.APP_NAME} app: its folder, shortcuts and Windows Settings > Apps "
                              'entry. The game, your game saves and your mods are not touched. It asks first.')
-                  if mine else "This is the portable Link's Toolbox (run from its folder, not installed), so there's "
+                  if mine else f"This is the portable {nxsave.APP_NAME} (run from its folder, not installed), so there's "
                   'nothing to uninstall: to remove it, delete its folder. (Uninstalling is for the installed app, set '
                   'up with Install Link Toolbox.bat.) The game is never touched.',
                   foreground=theme.MUTED, wraplength=640, justify='left').pack(side='left', padx=(10, 0))
@@ -390,7 +390,7 @@ class Toolbox:
         self.icon_preview = ttk.Label(box)
         self.icon_preview.grid(row=0, column=0, rowspan=6, sticky='nw', padx=(0, 16))
         self.icon_pixels = None
-        self.icon_kind = tk.StringVar(value="Link's toolbox")
+        self.icon_kind = tk.StringVar(value="Link's Tool Box")
         r = 0
         for name in icons.STYLES:
             ttk.Radiobutton(box, text=name, value=name, variable=self.icon_kind,

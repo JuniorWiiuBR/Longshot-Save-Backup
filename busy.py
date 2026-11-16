@@ -13,7 +13,7 @@ from tkinter import ttk
 import theme
 
 
-def run(parent, text, work, title="Link's Toolbox", delay_ms=250):
+def run(parent, text, work, title="Link's Tool Box", delay_ms=250):
     """Runs work() on another thread and waits for it while the window keeps redrawing; a small Working... window shows
     once it takes longer than delay_ms (quick jobs just finish). Returns work()'s result, or raises its error."""
     import gc

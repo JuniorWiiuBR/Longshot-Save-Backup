@@ -1,4 +1,4 @@
-# Link's Toolbox: installs (or upgrades) the newest Windows version from GitHub. In PowerShell:
+# Link's Tool Box: installs (or upgrades) the newest Windows version from GitHub. In PowerShell:
 #
 #     irm https://raw.githubusercontent.com/losava/Links-Toolbox/main/install.ps1 | iex
 #
@@ -12,13 +12,13 @@
     $work = Join-Path $env:TEMP ('LinkToolbox-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
     New-Item -ItemType Directory -Force $work | Out-Null
     try {
-        Write-Host "Downloading Link's Toolbox (about 85 MB)..."
+        Write-Host "Downloading Link's Tool Box (about 85 MB)..."
         Invoke-WebRequest $url -OutFile "$work\Link Toolbox.zip" -UseBasicParsing
         Write-Host 'Unpacking...'
         Expand-Archive "$work\Link Toolbox.zip" $work -Force
         $py = "$work\Link Toolbox\python\pythonw.exe"
         $installer = "$work\Link Toolbox\app\install.py"
-        if (-not (Test-Path $py) -or -not (Test-Path $installer)) { throw "The download does not look like Link's Toolbox." }
+        if (-not (Test-Path $py) -or -not (Test-Path $installer)) { throw "The download does not look like Link's Tool Box." }
         Write-Host 'Opening the installer: click Install (or Upgrade).'
         Start-Process $py -ArgumentList "`"$installer`"" -Wait
         Write-Host 'Done.'

@@ -14,7 +14,8 @@ HERE = Path(__file__).resolve().parent
 ICO = HERE / 'icon.ico'
 PNG = HERE / 'icon.png'
 SIZES = (256, 64, 48, 32, 24, 16)
-SHORTCUT_NAME = 'Link Toolbox.lnk'
+SHORTCUT_NAME = "Link's Tool Box.lnk"
+OLD_SHORTCUT_NAMES = ('Link Toolbox.lnk',)      # (before v1.1.9: swapped for the new name)
 
 
 # ------------------------------------------------------------------------------------------------ PNG in and out
@@ -215,7 +216,7 @@ def triforce_icon(size=256):
     return c.done()
 
 
-STYLES = {'Link\'s toolbox': toolbox_icon, 'Triforce': triforce_icon}
+STYLES = {"Link's Tool Box": toolbox_icon, 'Triforce': triforce_icon}
 
 
 def default_icon(size=256):
@@ -304,7 +305,8 @@ def ensure():
 # ------------------------------------------------------------------------------------------------- shortcuts
 WINDOWS = os.name == 'nt'
 if not WINDOWS:
-    SHORTCUT_NAME = 'Link Toolbox.desktop'      # (Linux: a desktop launcher instead of a .lnk)
+    SHORTCUT_NAME = "Link's Tool Box.desktop"      # (Linux: a desktop launcher instead of a .lnk)
+    OLD_SHORTCUT_NAMES = ('Link Toolbox.desktop',)
 
 
 def launcher():
@@ -355,9 +357,26 @@ def first_run():
     """The icon, and a shortcut next to Link Toolbox.bat, made once (on its own thread: PowerShell is slow to start)."""
     ensure()
     lnk = bat_folder() / SHORTCUT_NAME
-    if not lnk.exists():
+    if not lnk.exists() or any((f / o).exists() for f in (bat_folder(),) for o in OLD_SHORTCUT_NAMES):
         import threading
-        threading.Thread(target=make_shortcut, args=(lnk,), daemon=True).start()
+
+        def work():
+            swap_old_shortcuts()
+            if not lnk.exists():
+                make_shortcut(lnk)
+        threading.Thread(target=work, daemon=True).start()
+
+
+def swap_old_shortcuts():
+    """Shortcuts made under the old name ("Link Toolbox") are made again under the new one, and the old ones removed:
+    next to the .bat, and on the Desktop."""
+    for folder in (bat_folder(), desktop_folder()):
+        for old in OLD_SHORTCUT_NAMES:
+            if (folder / old).exists() and make_shortcut(folder / SHORTCUT_NAME):
+                try:
+                    (folder / old).unlink()
+                except OSError:
+                    pass
 
 
 def make_shortcut(path):
@@ -367,8 +386,8 @@ def make_shortcut(path):
     if not WINDOWS:
         try:
             Path(path).parent.mkdir(parents=True, exist_ok=True)
-            Path(path).write_text('[Desktop Entry]\nType=Application\nName=Link Toolbox\n'
-                                  "Comment=Link's Toolbox - mod loader and save editor\n"
+            Path(path).write_text('[Desktop Entry]\nType=Application\nName=Link\'s Tool Box\n'
+                                  "Comment=Link's Tool Box - mod loader and save editor\n"
                                   f'Exec="{program}" {args}\nPath={folder}\nIcon={PNG}\nTerminal=false\n'
                                   'Categories=Game;Utility;\n', encoding='utf-8')
             os.chmod(path, 0o755)
@@ -378,7 +397,7 @@ def make_shortcut(path):
     q = lambda s: str(s).replace("'", "''")
     ps = (f"$s=(New-Object -ComObject WScript.Shell).CreateShortcut('{q(path)}'); $s.TargetPath='{q(program)}'; "
           f"$s.Arguments='{q(args)}'; $s.WorkingDirectory='{q(folder)}'; $s.IconLocation='{q(ICO)},0'; "
-          "$s.Description='Link''s Toolbox - mod loader and save editor'; $s.Save()")
+          "$s.Description='Link''s Tool Box - mod loader and save editor'; $s.Save()")
     try:
         r = subprocess.run(['powershell', '-NoProfile', '-Command', ps], capture_output=True, text=True, timeout=30,
                            creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))

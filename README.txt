@@ -1,10 +1,10 @@
 ===============================================================================
-                              LINK'S TOOLBOX
+                              LINK'S TOOL BOX
    Mod loader + save editor for Zelda: Ocarina of Time (Triforce / Longshot)
                               by Cum_Dumpster
 ===============================================================================
 
-Link's Toolbox is a small Windows app for people who play Ocarina of Time
+Link's Tool Box is a small Windows app for people who play Ocarina of Time
 through Triforce. In one window it lets you:
 
   * turn your mods on and off before you play, and choose which one wins
@@ -32,7 +32,7 @@ INSTALLED APP (Windows): double-click  Install Link Toolbox.bat
   It goes to %LOCALAPPDATA%\Programs\Link Toolbox (no admin needed), with
   Start menu and Desktop shortcuts, and an entry in Windows Settings > Apps.
   Running it again over an installed copy upgrades it.
-  To uninstall the app: Updates tab > "Uninstall Link's Toolbox (this app)",
+  To uninstall the app: Updates tab > "Uninstall Link's Tool Box (this app)",
   or Windows Settings > Apps. It removes only the toolbox app (it asks
   first): the game, your game saves and your mods are not touched.
 
@@ -42,7 +42,7 @@ changes until you click "Update now", which downloads it, closes the
 toolbox, puts the new version in and opens it again. Your settings,
 backups and icon are kept.
 
-The first time, it also makes a "Link Toolbox" shortcut with the toolbox's
+The first time, it also makes a "Link's Tool Box" shortcut with the toolbox's
 icon next to the .bat (a .bat file can't have an icon of its own). Use that
 shortcut from then on, or make one on your Desktop in the Look tab.
 
@@ -66,7 +66,7 @@ LINUX (the "Link Toolbox (Linux).tar.gz" download):
   build (saves in ~/.local/share/longshot/save). Triforce or NX2navi run
   through Wine/Proton can be picked in the Folders tab. The slot picture
   needs Pillow, ImageMagick or ffmpeg installed (without them it's left
-  out). The first start makes a "Link Toolbox" launcher next to the script.
+  out). The first start makes a "Link's Tool Box" launcher next to the script.
 
 
 -------------------------------------------------------------------------------
@@ -219,7 +219,7 @@ Inventory tab to try them.
    Choose a theme (Dark green, Dark grey, Dark blue, Midnight purple, Light),
    an accent colour, and a colour for every tab. Changes show at once and
    are remembered.
-   Icon: Link's toolbox, a Triforce, or a square of any save slot's picture
+   Icon: Link's Tool Box, a Triforce, or a square of any save slot's picture
    (the slider picks which part). "Use this icon" puts it on the window and
    the shortcuts. "Shortcut on the Desktop" makes one there.
 
@@ -299,7 +299,7 @@ Inventory tab to try them.
  CREDITS
 -------------------------------------------------------------------------------
 
-  Link's Toolbox by Cum_Dumpster.
+  Link's Tool Box by Cum_Dumpster.
   Built for the Triforce PC port of Ocarina of Time.
   Python is included under its own license (python\LICENSE.txt).
 

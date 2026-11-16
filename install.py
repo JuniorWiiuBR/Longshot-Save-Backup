@@ -1,4 +1,4 @@
-"""Installs Link's Toolbox for this Windows user (no admin needed): copies the unzipped download to
+"""Installs Link's Tool Box for this Windows user (no admin needed): copies the unzipped download to
 %LOCALAPPDATA%\\Programs\\Link Toolbox, adds Start menu and Desktop shortcuts, and an entry in Windows Settings > Apps
 (where it can be uninstalled). Installing over an installed copy upgrades it and keeps the player's own files.
 
@@ -20,7 +20,7 @@ import nxsave  # noqa: E402
 import theme  # noqa: E402
 import updater  # noqa: E402
 
-NAME = "Link's Toolbox"
+NAME = nxsave.APP_NAME
 KEY = r'Software\Microsoft\Windows\CurrentVersion\Uninstall\LinkToolbox'
 DEFAULT = Path(os.environ.get('LOCALAPPDATA', str(Path.home()))) / 'Programs' / 'Link Toolbox'
 NOWIN = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
@@ -31,12 +31,12 @@ def arg(name, default=None):
 
 
 def start_menu():
-    return Path(os.environ.get('APPDATA', '')) / 'Microsoft' / 'Windows' / 'Start Menu' / 'Programs' / 'Link Toolbox.lnk'
+    return Path(os.environ.get('APPDATA', '')) / 'Microsoft' / 'Windows' / 'Start Menu' / 'Programs' / "Link's Tool Box.lnk"
 
 
 def desktop():
     import icons
-    return icons.desktop_folder() / 'Link Toolbox.lnk'
+    return icons.desktop_folder() / "Link's Tool Box.lnk"
 
 
 def shortcut(lnk, target):
@@ -45,7 +45,7 @@ def shortcut(lnk, target):
     ps = (f"$s=(New-Object -ComObject WScript.Shell).CreateShortcut('{q(lnk)}'); "
           f"$s.TargetPath='{q(target / 'python' / 'pythonw.exe')}'; $s.Arguments='\"{q(target / 'app' / 'toolbox.pyw')}\"'; "
           f"$s.WorkingDirectory='{q(target / 'app')}'; $s.IconLocation='{q(target / 'app' / 'icon.ico')},0'; "
-          "$s.Description='Link''s Toolbox - mod loader and save editor'; $s.Save()")
+          "$s.Description='Link''s Tool Box - mod loader and save editor'; $s.Save()")
     Path(lnk).parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(['powershell', '-NoProfile', '-Command', ps], capture_output=True, timeout=60, creationflags=NOWIN)
     return Path(lnk).exists()
@@ -90,8 +90,22 @@ def refresh_version():
     found = installed()
     if found and os.path.normcase(str(found[0])) == os.path.normcase(str(SOURCE)):
         import winreg
+        links = []
+        for lnk in found[1]:            # (Start menu / Desktop shortcuts under the old name: under the new one)
+            p = Path(lnk)
+            if p.exists() and p.name == 'Link Toolbox.lnk':
+                new = p.with_name(f'{NAME}.lnk')
+                if shortcut(new, SOURCE):
+                    try:
+                        p.unlink()
+                    except OSError:
+                        pass
+                    p = new
+            links.append(str(p))
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, KEY, 0, winreg.KEY_SET_VALUE) as k:
             winreg.SetValueEx(k, 'DisplayVersion', 0, winreg.REG_SZ, nxsave.VERSION)
+            winreg.SetValueEx(k, 'DisplayName', 0, winreg.REG_SZ, NAME)
+            winreg.SetValueEx(k, 'Shortcuts', 0, winreg.REG_SZ, '|'.join(links))
 
 
 def copy_in(target):
@@ -153,7 +167,7 @@ def uninstall(yes=False, parent=None):
     for lnk in links + [str(start_menu()), str(desktop())]:
         try:
             p = Path(lnk)
-            if p.suffix == '.lnk' and p.exists() and 'Link Toolbox' in p.name:
+            if p.suffix == '.lnk' and p.exists() and ('Link Toolbox' in p.name or nxsave.APP_NAME in p.name):
                 p.unlink()
         except OSError:
             pass
