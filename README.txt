@@ -90,7 +90,10 @@ Inventory tab to try them.
 -------------------------------------------------------------------------------
 
  MODS
-   Lists every mod in the game's "mods" folder.
+   Game (at the top): whose mods you see - each game's "mods" folder
+   (Triforce and NX2navi share one, Longshot has its own), or one kept from
+   the Folders tab. Save and play starts that game.
+   Lists every mod in that "mods" folder.
      - Tick a mod (or press Space) to turn it on or off.
      - Up / Down sets the order. When two mods replace the same file, the
        LOWER one in the list wins. Clashes are shown in red.
@@ -103,7 +106,9 @@ Inventory tab to try them.
    Close the game first: mods can't be switched while it is running.
 
  SAVE EDITOR
-   Pick a save slot at the top. The summary shows hearts, rupees and
+   Pick the Game at the top (Triforce, NX2navi or Longshot: each keeps its
+   own saves; the top bar always shows which one you're editing and its
+   folder), then a save slot. The summary shows hearts, rupees and
    Gold Skulltula tokens, and the Stats tab shows the picture the game
    took when you last saved.
 
@@ -143,13 +148,18 @@ Inventory tab to try them.
    Every list can be sorted: click a column heading, click again to reverse.
    Edited values show in red until you save. "Save and play" saves your edits
    and starts the game (with the mods as set in the Mods tab).
+   "Save to..." writes the slot (with your edits) to every save location the
+   toolbox finds - Triforce, NX2navi, Longshot, all ticked - and into the
+   slot you pick. What was in those slots is copied to the backups first.
 
  FOLDERS
    Games found: every game the toolbox finds, by app (Triforce, Longshot,
    NX2navi). Pick one and press Apply to play that one: the toolbox opens
    again with its program for Save and play, its mods and its saves.
    Or use a different game folder, mods folder or saves folder. Leave a box
-   empty to use the default. (Triforce and Longshot only load mods from the
+   empty to use the default. Folders you fill in by hand are kept as choices
+   (in Games found and in the Mods and Save editor Game lists) while "Keep"
+   is ticked. The "Kept choices" list shows them all: "Forget" removes one. (Triforce and Longshot only load mods from the
    "mods" folder in the game folder.)
 
  LOOK

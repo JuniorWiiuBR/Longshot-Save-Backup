@@ -186,6 +186,13 @@ class App(ttk.Frame):
 
         top = ttk.Frame(self, padding=(10, 10, 10, 4))
         top.pack(fill='x')
+        # whose mods these are: each game's mods folder (Triforce and NX2navi share one), or one kept in Folders
+        ttk.Label(top, text='Game').pack(side='left')
+        self.game_var = tk.StringVar()
+        self.game_box = ttk.Combobox(top, textvariable=self.game_var, state='readonly', width=20)
+        self.game_box.pack(side='left', padx=(6, 12))
+        self.game_box.bind('<<ComboboxSelected>>', lambda _e: self.pick_game())
+        self.game_rows = []
         self.where = ttk.Label(top, text=f'Mods in {MODS}', foreground=theme.SOFT)
         self.where.pack(side='left')
         ttk.Button(top, text='Open folder', command=lambda: os.startfile(MODS)).pack(side='right')
@@ -229,6 +236,37 @@ class App(ttk.Frame):
         self.save_btn.pack(side='right', padx=(0, 6))
         self.reload()
 
+    # -- which game's mods
+    def fill_games(self):
+        """The Game list: every mods folder found (and the one in use, when it is none of them)."""
+        self.game_rows = nxsave.all_mod_locations()
+        here = os.path.normcase(str(MODS.resolve())) if MODS.exists() else os.path.normcase(str(MODS))
+        if not any(os.path.normcase(str(d.resolve())) == here for _l, d, _e in self.game_rows):
+            self.game_rows.insert(0, ('Mods folder', MODS, GAME_EXE))
+        self.game_box['values'] = [label for label, _d, _e in self.game_rows]
+        for i, (_l, d, _e) in enumerate(self.game_rows):
+            if os.path.normcase(str(d.resolve())) == here:
+                self.game_box.current(i)
+
+    def pick_game(self):
+        global MODS, GAME_EXE
+        label, d, exe = self.game_rows[self.game_box.current()]
+        if os.path.normcase(str(d)) == os.path.normcase(str(MODS)):
+            return
+        if self.dirty and not messagebox.askyesno('Mod loader', 'Forget the changes you have not saved?', parent=self):
+            self.fill_games()
+            return
+        MODS = d
+        # Save and play: the game in use when it is one of this folder's games (Triforce / NX2navi share one)
+        now = nxsave.app_of()
+        apps = label.split(' / ')
+        game = d.parent
+        GAME_EXE = (game / dict(nxsave.APPS)[now]) if now in apps and (game / dict(nxsave.APPS)[now]).is_file() \
+            else exe or GAME_EXE
+        self.dirty = False
+        self.reload()
+        self.status['text'] += f'   -   {label}: Save and play starts {GAME_EXE.name}'
+
     # -- the list
     def reload(self):
         if self.dirty and not messagebox.askyesno('Mod loader', 'Forget the changes you have not saved?', parent=self):
@@ -236,6 +274,7 @@ class App(ttk.Frame):
         self.mods = scan()
         self.dirty = False
         self.where['text'] = f'Mods in {MODS}'
+        self.fill_games()
         self.fill()
 
     def fill(self, keep=None):

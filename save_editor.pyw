@@ -13,7 +13,9 @@ import os
 import queue
 import sys
 import threading
+import time
 import tkinter as tk
+from pathlib import Path
 from tkinter import messagebox, ttk
 
 # the Python that NX2navi ships does not look for modules next to the script
@@ -294,6 +296,13 @@ class App(ttk.Frame):
 
         top = ttk.Frame(self, padding=(10, 10, 10, 4))
         top.pack(fill='x')
+        # whose save this is: Triforce, NX2navi or Longshot (each keeps its own saves); pick another to edit those
+        ttk.Label(top, text='Game').pack(side='left')
+        self.game_var = tk.StringVar()
+        self.game_box = ttk.Combobox(top, textvariable=self.game_var, state='readonly', width=13)
+        self.game_box.pack(side='left', padx=(6, 12))
+        self.game_box.bind('<<ComboboxSelected>>', lambda _e: self.pick_location())
+        self.locations = []
         ttk.Label(top, text='Save slot').pack(side='left')
         self.slot_var = tk.StringVar()
         self.slot_box = ttk.Combobox(top, textvariable=self.slot_var, state='readonly', width=14)
@@ -310,6 +319,7 @@ class App(ttk.Frame):
         self.play_btn.pack(side='right')
         self.save_btn = ttk.Button(bottom, text='Save', command=self.save, state='disabled')
         self.save_btn.pack(side='right', padx=(0, 6))
+        ttk.Button(bottom, text='Save to...', command=self.save_to_dialog).pack(side='right', padx=(0, 6))
         self.revert_btn = ttk.Button(bottom, text='Undo all edits', command=self.revert, state='disabled')
         self.revert_btn.pack(side='right', padx=(0, 8))
         ttk.Button(bottom, text='Backups folder', command=self.open_backups).pack(side='right', padx=(0, 8))
@@ -592,8 +602,48 @@ class App(ttk.Frame):
         return self.slot.files.get('progress') if self.slot else None
 
     def load_file_list(self):
-        accounts = nxsave.save_dirs()      # Triforce's saves (game/user/save) first, or the folder picked
-        self.account = accounts[0] if accounts else None
+        """The saves of the game in use (or of the folder picked in the Folders tab), and the Game list: every save
+        location found, so another game's saves can be edited too."""
+        accounts = nxsave.save_dirs()      # the game in use's saves first, or the folder picked
+        self.locations = nxsave.all_save_locations()
+        current = accounts[0] if accounts else None
+        if current is not None and not any(self.same(d, current) for _a, d in self.locations):
+            self.locations.insert(0, (nxsave.app_of(), current))
+        names, counts = [], {}
+        for app, _d in self.locations:      # (two saves folders for one app: 'Longshot', 'Longshot 2')
+            counts[app] = counts.get(app, 0) + 1
+            names.append(app if counts[app] == 1 else f'{app} {counts[app]}')
+        self.location_names = names
+        self.game_box['values'] = names
+        if current is not None:
+            self.game_box.current(next(i for i, (_a, d) in enumerate(self.locations) if self.same(d, current)))
+        else:
+            self.game_var.set('')
+        self.use_account(current)
+
+    @staticmethod
+    def same(a, b):
+        return os.path.normcase(str(Path(a).resolve())) == os.path.normcase(str(Path(b).resolve()))
+
+    def location_name(self):
+        """'Triforce', 'NX2navi', 'Longshot'... for the save open now."""
+        return self.game_var.get() or 'Save'
+
+    def pick_location(self):
+        i = self.game_box.current()
+        acct = self.locations[i][1]
+        if self.account is not None and self.same(acct, self.account):
+            return
+        if not self.may_discard():
+            j = next((k for k, (_a, d) in enumerate(self.locations) if self.account and self.same(d, self.account)), -1)
+            if j >= 0:
+                self.game_box.current(j)
+            return
+        self.use_account(acct)
+        self.set_status(f'Editing {self.location_name()}\'s saves: {acct}')
+
+    def use_account(self, account):
+        self.account = account
         self.slots = find_slots(self.account) if self.account else []
         self.slot_box['values'] = [label for label, _ in self.slots]
         if self.slots:
@@ -725,14 +775,16 @@ class App(ttk.Frame):
         if tokens is not None:
             bits.append(f'{tokens} skulltula tokens')
         where = s.files[next(iter(s.files))].path
-        self.summary['text'] = '  ·  '.join(bits) + f'      {where.parent.parent.name[:8]}.../{where.parent.name}'
+        acct = where.parent.parent
+        self.summary['text'] = '  ·  '.join(bits) + \
+            f'      {acct.parent.parent.name}\\{acct.parent.name}\\{acct.name[:8]}...\\{where.parent.name}'
         n = s.edited()
         if n:
             self.set_status(f'{n} value{"s" if n != 1 else ""} edited, not saved yet  -  press Save (with the game '
                             'closed)')
         elif self.status['text'].endswith('not saved yet  -  press Save (with the game closed)'):
             self.set_status('')
-        self.on_title(f'{"* " if dirty else ""}Save editor - {s.label}')
+        self.on_title(f'{"* " if dirty else ""}Save editor - {self.location_name()}, {s.label}')
 
     def set_status(self, text):
         self.status['text'] = text
@@ -1288,6 +1340,107 @@ class App(ttk.Frame):
         if ok:
             self.set_status(f'Saved. The previous files are in {BACKUPS}')
         return ok
+
+    # -- Save to...: this slot (with its edits) written to other save locations (each game's saves) and slots
+    def save_to_dialog(self):
+        s = self.slot
+        if not s or 'progress' not in s.files:
+            return
+        busy = nxsave.game_running()
+        if busy:
+            messagebox.showwarning('Save to', f'{busy} is running: close it first, so it does not write over the '
+                                   'saves.', parent=self)
+            return
+        here = s.files['progress'].path.parent.parent
+        places = nxsave.all_save_locations()
+        if not any(os.path.normcase(str(d)) == os.path.normcase(str(here)) for _a, d in places):
+            places.insert(0, ('This save', here))
+        win = tk.Toplevel(self)
+        win.title(f'Save {s.label} to...')
+        win.transient(self.winfo_toplevel())
+        win.resizable(False, False)
+        frm = ttk.Frame(win, padding=14)
+        frm.pack(fill='both', expand=True)
+        ttk.Label(frm, text=f'Write {s.label}' + (f' with its {s.edited()} edits' if s.dirty else '') +
+                  ' to these save locations:', font=('Segoe UI', 10, 'bold')).pack(anchor='w')
+        checks = []
+        for app, d in places:
+            var = tk.BooleanVar(value=True)
+            mark = '   (this one)' if os.path.normcase(str(d)) == os.path.normcase(str(here)) else ''
+            ttk.Checkbutton(frm, text=f'{app}  —  {d}{mark}', variable=var).pack(anchor='w', pady=(4, 0))
+            checks.append((var, app, d))
+        row = ttk.Frame(frm)
+        row.pack(fill='x', pady=(12, 0))
+        ttk.Label(row, text='Into slot').pack(side='left')
+        slot_var = tk.StringVar(value=s.label)
+        ttk.Combobox(row, textvariable=slot_var, state='readonly', width=10,
+                     values=[f'Slot {n}' for n in range(1, 7)]).pack(side='left', padx=(8, 12))
+        ttk.Button(row, text='All', command=lambda: [v.set(True) for v, *_ in checks]).pack(side='left')
+        ttk.Button(row, text='None', command=lambda: [v.set(False) for v, *_ in checks]).pack(side='left',
+                                                                                         padx=(6, 0))
+        ttk.Label(frm, text='What is in that slot now is copied into the backups folder first. Close every game '
+                            'before saving.', foreground=theme.MUTED, wraplength=560, justify='left').pack(
+            anchor='w', pady=(10, 0))
+        bar = ttk.Frame(frm)
+        bar.pack(fill='x', pady=(12, 0))
+        ttk.Button(bar, text='Cancel', command=win.destroy).pack(side='right')
+
+        def go():
+            targets = [(app, d) for v, app, d in checks if v.get()]
+            if not targets:
+                return
+            n = int(slot_var.get().split()[-1]) - 1
+            win.destroy()
+            self.save_to(targets, n)
+        ttk.Button(bar, text='Save', command=go).pack(side='right', padx=(0, 8))
+        win.bind('<Escape>', lambda _e: win.destroy())
+        win.update_idletasks()
+        win.geometry(f'+{self.winfo_rootx() + 120}+{self.winfo_rooty() + 100}')
+        win.grab_set()
+
+    def save_to(self, targets, n):
+        """Writes this slot's progress.sav and caption.sav, as edited, into slot n of each account folder in targets
+        [(app, folder)]; what was there goes to the backups folder first. The open slot itself counts as saved when
+        it is one of them."""
+        import shutil
+        s = self.slot
+        here = s.files['progress'].path.parent
+        stamp = time.strftime('%Y-%m-%d %H%M%S')
+        files = [(name, s.files[kind]) for kind, name in (('progress', 'progress.sav'), ('caption', 'caption.sav'))
+                 if kind in s.files]
+        done, failed, saved_here = [], [], False
+        for app, acct in targets:
+            dest = Path(acct) / f'slot_{n:02d}'
+            try:
+                if os.path.normcase(str(dest)) == os.path.normcase(str(here)):
+                    for _name, sf in files:
+                        if sf.dirty:
+                            sf.save(BACKUPS)
+                    saved_here = True
+                else:
+                    dest.mkdir(parents=True, exist_ok=True)
+                    keep = BACKUPS / stamp / f'{app} {Path(acct).name[:8]}' / dest.name
+                    for name, sf in files:
+                        old = dest / name
+                        if old.is_file():
+                            keep.mkdir(parents=True, exist_ok=True)
+                            shutil.copy2(old, keep / name)
+                        tmp = dest / (name + '.editing')
+                        tmp.write_bytes(sf.buf)
+                        tmp.replace(old)
+                done.append(f'{app}: {dest}')
+            except OSError as err:
+                failed.append(f'{app}: {dest}\n   {err}')
+        self.refresh_all()
+        msg = f'{s.label} written to slot {n + 1} in {len(done)} place{"s" if len(done) != 1 else ""}:\n\n' + \
+              '\n'.join(done)
+        if failed:
+            msg += '\n\nCould not write:\n' + '\n'.join(failed)
+        if not saved_here and s.dirty:
+            msg += '\n\n(The open slot itself was not among them: its edits are still not saved here.)'
+        (messagebox.showwarning if failed else messagebox.showinfo)('Save to', msg, parent=self)
+        self.set_status(f'Written to {len(done)} save location{"s" if len(done) != 1 else ""}. Old files are in '
+                        f'{BACKUPS}')
 
     def save_and_play(self):
         """Saves the edits (asking, as Save does), then starts the game."""

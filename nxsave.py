@@ -317,6 +317,26 @@ def _game_dir_candidates():
     if longshot.is_dir():
         yield from sorted((p for p in longshot.iterdir() if (p / 'longshot.exe').is_file()),
                           key=lambda p: p.stat().st_mtime, reverse=True)
+    yield from remembered('games')     # game folders typed in the Folders tab and kept
+
+
+def remembered(kind):
+    """The folders the player typed in the Folders tab and chose to keep: kind 'games' or 'saves'."""
+    return [p for p in load_settings().get(f'remembered_{kind}', []) if isinstance(p, str)]
+
+
+def remember(kind, path, keep=True):
+    """Keeps (or, keep=False, forgets) a folder in the Folders tab's lists."""
+    s = load_settings()
+    have = [p for p in s.get(f'remembered_{kind}', []) if os.path.normcase(p) != os.path.normcase(str(path))]
+    if keep:
+        have.append(str(path))
+    s[f'remembered_{kind}'] = have
+    save_settings(s)
+
+
+def is_remembered(kind, path):
+    return any(os.path.normcase(p) == os.path.normcase(str(path)) for p in remembered(kind))
 
 
 def all_game_dirs():
@@ -395,16 +415,88 @@ def save_dirs(game=None):
     if chosen and Path(chosen).is_dir():
         return save_dirs_in(chosen)
     out = []
+    for base in save_bases(game, app_of(game)):
+        out += accounts_in(base)
+    return out
+
+
+def save_bases(game, app):
+    """The folders an app keeps its save accounts in, its own first."""
+    game = Path(game)
     bases = [game.joinpath(*parts) for parts in SAVE_BASES]
-    app = app_of(game)
     if app == 'Longshot':     # Longshot started from its launcher keeps the saves in %APPDATA%\Longshot\save
         bases.insert(0, Path(os.environ.get('APPDATA', ''), 'Longshot', 'save'))
     elif app == 'NX2navi':    # NX2navi's own saves: profile/save (Triforce moved its copies to user/save)
         bases.reverse()
-    for base in bases:
-        found = [d for d in base.iterdir() if d.is_dir() and re.fullmatch(r'[0-9a-fA-F]{32}', d.name)] \
-            if base.is_dir() else []
-        out += sorted(found, key=lambda d: max((f.stat().st_mtime for f in d.rglob('*.sav')), default=0), reverse=True)
+    return bases
+
+
+def accounts_in(base):
+    """The save accounts (32-hex folders) in a saves folder, the latest written first."""
+    base = Path(base)
+    found = [d for d in base.iterdir() if d.is_dir() and re.fullmatch(r'[0-9a-fA-F]{32}', d.name)] \
+        if base.is_dir() else []
+    return sorted(found, key=lambda d: max((f.stat().st_mtime for f in d.rglob('*.sav')), default=0), reverse=True)
+
+
+def all_mod_locations():
+    """[(label, mods folder, program)] of every mods folder: each game's (Triforce and NX2navi share one folder, so
+    one row 'Triforce / NX2navi'), the one set in the Folders tab, and those kept from it. program: the game that
+    Save and play starts for those mods (None for a kept folder outside any game)."""
+    rows, by_key = [], {}
+
+    def add(label, d, exe):
+        key = os.path.normcase(str(Path(d).resolve()))
+        if key in by_key:
+            i = by_key[key]
+            if label not in rows[i][0].split(' / '):
+                rows[i] = (f'{rows[i][0]} / {label}', rows[i][1], rows[i][2])
+            return
+        by_key[key] = len(rows)
+        rows.append((label, Path(d), exe))
+    for app, game in all_game_dirs():
+        exe = dict(APPS).get(app)
+        label = f'{app} ({Path(game).name})' if is_remembered('games', game) else app
+        add(label, Path(game) / 'mods', Path(game) / exe if exe else None)
+    for label, d in [('Folders tab', load_settings().get('mods_dir'))] + [('Kept', p) for p in remembered('mods')]:
+        if d and Path(d).is_dir():
+            add(label, d, game_exe(Path(d).parent) if is_game_dir(Path(d).parent) else None)
+    return _tell_apart(rows, lambda d: d.parent.name)
+
+
+def _tell_apart(rows, where):
+    """Rows whose labels repeat get the folder they come from added: 'Triforce (OtherGame)'."""
+    counts = {}
+    for row in rows:
+        counts[row[0]] = counts.get(row[0], 0) + 1
+    return [(f'{r[0]} ({where(r[1])})',) + tuple(r[1:]) if counts[r[0]] > 1 else r for r in rows]
+
+
+def all_save_locations():
+    """[(app, account folder)] of every save the toolbox can find: each game's own saves folder (Triforce: user/save,
+    NX2navi: profile/save, Longshot: %APPDATA%/Longshot/save or its user/save), and the one set in the Folders tab."""
+    out, seen = [], set()
+
+    def add(app, d):
+        key = os.path.normcase(str(Path(d).resolve()))
+        if key not in seen:
+            seen.add(key)
+            out.append((app, Path(d)))
+    chosen = load_settings().get('save_dir')
+    if chosen and Path(chosen).is_dir():
+        for d in save_dirs_in(chosen):
+            add('Folders tab', d)
+    for app, game in all_game_dirs():
+        own = save_bases(game, app)
+        # each app's own place first; Triforce and NX2navi share a game folder, so each claims only its own
+        mine = own[:1] if app in ('Triforce', 'NX2navi') else own[:2]
+        for base in mine:
+            for d in accounts_in(base):
+                add(app, d)
+    for kept in remembered('saves'):   # saves folders typed in the Folders tab and kept
+        if Path(kept).is_dir():
+            for d in save_dirs_in(kept):
+                add('Kept', d)
     return out
 
 

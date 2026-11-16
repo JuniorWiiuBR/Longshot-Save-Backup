@@ -102,12 +102,13 @@ class Toolbox:
                  "A save's own folder (the one with slot_01, slot_02...), or a folder of those: the latest is used."))
         # every game folder found (Triforce, Longshot...): pick one to use it, its mods and its saves
         ttk.Label(tab, text='Games found', font=('Segoe UI', 10, 'bold')).grid(row=0, column=0, sticky='w')
-        self.found = nxsave.all_game_dirs()
         self.found_var = tk.StringVar()
-        labels = [f'{app}  —  {path}' for app, path in self.found]
-        box = ttk.Combobox(tab, textvariable=self.found_var, values=labels, state='readonly')
-        box.grid(row=0, column=1, columnspan=3, sticky='ew', padx=8)
+        box = self.found_box = ttk.Combobox(tab, textvariable=self.found_var, state='readonly')
+        box.grid(row=0, column=1, columnspan=2, sticky='ew', padx=8)
         box.bind('<<ComboboxSelected>>', lambda _e: self.pick_found(box.current()))
+        self.forget_btn = ttk.Button(tab, text='Forget', command=self.forget_found, state='disabled')
+        self.forget_btn.grid(row=0, column=3, padx=(6, 0))
+        self.fill_found()
         now = os.path.normcase(str(self.game_at_start.resolve())) if self.game_at_start.exists() else ''
         self.app_at_start = nxsave.app_of(self.game_at_start)
         self.picked_app = settings.get('game_app', '')
@@ -130,6 +131,16 @@ class Toolbox:
             ttk.Label(tab, text=f'{hint}\nEmpty: the default, {default}', foreground=theme.MUTED).grid(
                 row=r + 1, column=1, columnspan=3, sticky='w', padx=8)
             r += 2
+        self.keep_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(tab, text='Keep the game, mods and saves folders I fill in here as choices (in Games found, '
+                                  'and in the Mods and Save editor Game lists)', variable=self.keep_var).grid(
+            row=r, column=0, columnspan=4, sticky='w', pady=(14, 0))
+        r += 1
+        self.kept_box = ttk.LabelFrame(tab, text='Kept choices', padding=(10, 4))
+        self.kept_box.grid(row=r, column=0, columnspan=4, sticky='ew', pady=(10, 0))
+        self.kept_box.columnconfigure(1, weight=1)
+        self.fill_kept()
+        r += 1
         ttk.Label(tab, text='Triforce and Longshot only load mods from the mods folder in the game folder '
                             f'({mod_loader.DEFAULT_MODS}). Mods kept anywhere else can be switched here but '
                             'the game will not see them, unless that folder is next to another game program '
@@ -351,11 +362,58 @@ class Toolbox:
                          cwd=HERE)
         self.root.destroy()
 
+    def fill_found(self):
+        """The Games found list: every game found, and the game folders kept from the Folders tab ('(kept)')."""
+        self.found = nxsave.all_game_dirs()
+        self.found_box['values'] = [f'{app}  —  {path}' + ('   (kept)' if nxsave.is_remembered('games', path)
+                                                                else '') for app, path in self.found]
+        self.forget_btn['state'] = 'disabled'
+
+    KEPT_KINDS = (('games', 'Game'), ('mods', 'Mods'), ('saves', 'Saves'))
+
+    def fill_kept(self):
+        """The Kept choices list: every kept game, mods and saves folder, each with a Forget button."""
+        for w in self.kept_box.winfo_children():
+            w.destroy()
+        rows = [(kind, label, p) for kind, label in self.KEPT_KINDS for p in nxsave.remembered(kind)]
+        if not rows:
+            ttk.Label(self.kept_box, text='Nothing kept. Folders you fill in above (that were not found) are kept '
+                                          'here when you press Apply.', foreground=theme.MUTED).grid(sticky='w')
+            return
+        for i, (kind, label, p) in enumerate(rows):
+            ttk.Label(self.kept_box, text=label, width=6, foreground=theme.GOLD).grid(row=i, column=0, sticky='w')
+            missing = '' if os.path.isdir(p) else '   (not there any more)'
+            ttk.Label(self.kept_box, text=p + missing).grid(row=i, column=1, sticky='w', padx=(6, 6))
+            ttk.Button(self.kept_box, text='Forget', command=lambda k=kind, q=p: self.forget_kept(k, q)).grid(
+                row=i, column=2, pady=1)
+
+    def forget_kept(self, kind, path):
+        nxsave.remember(kind, path, keep=False)
+        self.fill_kept()
+        self.fill_found()
+        self.mods.fill_games()
+        if kind == 'saves' and self.saves.may_discard():     # (its Game list loses the folder)
+            self.saves.load_file_list()
+        self.folders_status['text'] = f'Forgotten: {path}'
+
+    def forget_found(self):
+        i = self.found_box.current()
+        if i < 0:
+            return
+        _app, path = self.found[i]
+        nxsave.remember('games', path, keep=False)
+        self.fill_found()
+        self.fill_kept()
+        self.mods.fill_games()
+        self.found_var.set('')
+        self.folders_status['text'] = f'Forgotten: {path}'
+
     def pick_found(self, i):
         """A game picked in Games found: it becomes the Game folder; its own mods and saves folders (the defaults)."""
         if i < 0:
             return
         app, path = self.found[i]
+        self.forget_btn['state'] = 'normal' if nxsave.is_remembered('games', path) else 'disabled'
         self.game_var.set(str(path))
         self.picked_app = app if app != 'Game files' else ''
         self.mods_var.set('')
@@ -406,6 +464,17 @@ class Toolbox:
         nxsave.save_settings({**nxsave.load_settings(), 'mods_dir': mods_dir, 'save_dir': save_dir,
                               'game_dir': os.path.normpath(game) if game else '',
                               'game_app': self.picked_app if game else ''})
+        if self.keep_var.get():    # folders filled in by hand, not found by the toolbox: kept as choices
+            if game and not any(same(game, p) for _a, p in self.found):
+                nxsave.remember('games', os.path.normpath(game))
+            if save_dir and not any(same(save_dir, d) or same(save_dir, d.parent)
+                                    for a, d in nxsave.all_save_locations() if a != 'Folders tab'):
+                nxsave.remember('saves', os.path.normpath(save_dir))
+            if mods_dir and not any(same(mods_dir, d) for l, d, _e in nxsave.all_mod_locations()
+                                    if l != 'Folders tab'):
+                nxsave.remember('mods', os.path.normpath(mods_dir))
+            self.fill_found()
+            self.fill_kept()
         if not same(str(nxsave.game_dir()), self.game_at_start) or nxsave.app_of() != self.app_at_start:
             self.folders_status['text'] = 'Saved. Open the toolbox again for the new game.'
             if messagebox.askyesno('Folders', f'Now playing {nxsave.app_of()} from\n{nxsave.game_dir()}\n\nThe '

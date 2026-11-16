@@ -31,7 +31,8 @@ They're made for **Ocarina of Time v131072** built with Triforce, and may not wo
 ## Features
 
 ### Mods
-- Lists every mod in the game's `mods` folder. Tick a mod to turn it on or off.
+- **Game** at the top picks whose mods you see: each game's `mods` folder (Triforce and NX2navi share one, Longshot has its own), plus any you keep from the Folders tab. Save and play starts that game.
+- Lists every mod in that `mods` folder. Tick a mod to turn it on or off.
 - Set the order: when two mods replace the same file, the lower one wins, and clashes are shown in red.
 - **Save and play** starts the game with your choice.
 - **Add mods...** copies mods in: the ones that come with the toolbox, or any folder you pick.
@@ -41,7 +42,7 @@ They're made for **Ocarina of Time v131072** built with Triforce, and may not wo
 ![The Mods tab](docs/mods.png)
 
 ### Save editor
-Pick a save slot. Each slot shows its summary and the picture the game took when you last saved.
+Pick the **Game** whose saves you're editing (Triforce, NX2navi or Longshot: each keeps its own saves, and the top bar always shows which one and its folder), then a save slot. Each slot shows its summary and the picture the game took when you last saved.
 
 | Tab | What you can do |
 |---|---|
@@ -50,7 +51,7 @@ Pick a save slot. Each slot shows its summary and the picture the game took when
 | **Progress** | More than 6,000 story flags (events, talks and Navi hints, dungeons, places, items found, mini-games...), searchable and filtered by group and state. |
 | **All entries** | Every value in the slot's files, for advanced editing. |
 
-Every list sorts by any column: click the heading, and click again to reverse. **Save and play** saves your edits and starts the game, with the mods as set in the Mods tab.
+Every list sorts by any column: click the heading, and click again to reverse. **Save and play** saves your edits and starts the game, with the mods as set in the Mods tab. **Save to...** writes the slot, with your edits, to every save location the toolbox finds (Triforce, NX2navi, Longshot, all ticked by default) and into any slot you pick, so one save can be the same in every game. What was there before goes to the backups.
 
 **Switching age:** a save keeps Link's age in the map he's saved on. Outdoors, each area has a young and an adult map (`KakarikoVillage_Child` and `KakarikoVillage_Adult`), so **Switch to adult / young** moves him to the other age's map, together with the file-select screen and the save's "is a child" flag. Dungeons and houses have one map for both ages, so the editor asks you to save outside first.
 
@@ -71,7 +72,7 @@ Every list sorts by any column: click the heading, and click again to reverse. *
 ![The All entries tab](docs/all-entries.png)
 
 ### Folders
-**Games found** lists every game the toolbox finds, by app: Triforce, Longshot, and NX2navi (whose `ocarina.exe` can sit in the same folder as Triforce's). Pick one and press Apply: the toolbox reopens with that game's program for Save and play, its mods and its saves. Or set a different game, mods or saves folder by hand. Leave a box empty for the default.
+**Games found** lists every game the toolbox finds, by app: Triforce, Longshot, and NX2navi (whose `ocarina.exe` can sit in the same folder as Triforce's). Pick one and press Apply: the toolbox reopens with that game's program for Save and play, its mods and its saves. Or set a different game, mods or saves folder by hand. Leave a box empty for the default. Folders you fill in by hand (ones the toolbox didn't find) are **kept as choices** if the Keep box is ticked: they show up in Games found, in the Mods tab's Game list and in the Save editor's Game list. The **Kept choices** list shows every kept folder, each with a **Forget** button to remove it.
 
 ![The Folders tab](docs/folders.png)
 

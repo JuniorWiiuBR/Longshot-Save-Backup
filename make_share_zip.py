@@ -60,7 +60,10 @@ def share_mods():
     """The mods that are on in the game's mods folder (not starting with _ or -), and the size table."""
     sys.path.insert(0, str(HERE))
     import nxsave
-    mods = nxsave.game_dir() / 'mods'
+    # (from the Triforce game when there is one, whatever game the toolbox is set to now)
+    triforce = next((p for app, p in nxsave.all_game_dirs() if app == 'Triforce'), None)
+    mods = (triforce or nxsave.game_dir()) / 'mods'
+    print('mods from:', mods)
     return sorted(p for p in mods.iterdir() if p.is_dir() and not p.name.startswith(('_', '-'))
                   and (p / 'romfs').is_dir()) if mods.is_dir() else []
 
