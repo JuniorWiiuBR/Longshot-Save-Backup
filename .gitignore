@@ -29,7 +29,3 @@
 !Link Toolbox.bat
 !Mod Loader.bat
 !Save Editor.bat
-
-# Longshot Save Backup (JuniorWiiuBR's app, merged in pull request #2): all of its folder
-!LongshotSaveBackup/
-!LongshotSaveBackup/**
